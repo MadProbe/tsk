@@ -1,0 +1,8 @@
+.trash
+.vscode
+build/deps
+index.js
+index.html
+server.json
+node_modules
+tsk-*.tgz

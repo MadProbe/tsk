@@ -1,0 +1,39 @@
+__object_class = __external_var("Object");
+__promise_class = __external_var("Promise");
+__object_create = __object_class.create;
+__keys = __object_class.keys;
+___call = __keys.call;
+__bind = ___call.bind(___call.bind);
+__apply = __bind(___call, __keys.apply);
+__call = __bind(___call, ___call);
+__promise_resolve = __bind(__promise_class.resolve, __promise_class);
+fn __create_class(proto, classprops) {
+    fn klass() {}
+    klass.prototype = proto;
+    if ("constructor" not in proto) {
+        proto.constructor = klass;
+    }
+    for (key in classprops) {
+        klass[key] = classprops[key];
+    }
+    return klass;
+}
+fn __create_object(...props) => {
+    object = __object_create(null);
+}
+fn __nullish(__value) => __value === null || __value === __undefined;
+fn __async(func) => fn () => new __promise_class(resolve => {
+    __gen = __apply(func, this, arguments);
+    __next = __gen.next;
+    __temp();
+    fn __temp(__prev) {
+        __value = __call(__next, __gen, __prev);
+        if (not __value.done) {
+            __promise_resolve(__value.value).then(__value => __temp(__value));
+        } else {
+            resolve(__value.value);
+        }
+    };
+});
+
+

@@ -1,0 +1,105 @@
+
+// include "./utils.tsk";
+// include "./module.tsk";
+
+// "dasdasasdadfasdfadfasfasdfadfasdfasdf\"";
+// -0;
+// 0..-10;
+/**/
+/*Math = __external_var("Math");
+index = #sdasdas#ss;
+
+fn e1(...params) {
+    ...expressions;
+}
+fn e2(...params) => {
+    ...expressions;
+}
+fn e3(...params) => expression; // a comment
+fn e4() => fn n1 () => expression;
+fn e5() => fn () => expression;
+fn e6() => () => expression;
+fn e6() => () => {
+    ...expressions;
+}
+fn test() {
+    variable = expression;
+    e1(variable);
+    if (expression) expression;
+    if (expression) {
+    }
+}
+if (0..10 not contains (Math.random() * 20 |> Math.floor)) console.log("Lol");
+/*
+Lol
+*/
+
+
+
+include "./example-module.tsk";
+// variable declarations
+a = 2;
+b = 4;
+c = 6;
+// __external_var is for exposing external variable 
+// (also can be used for executing statments that are implented in js but not yet in tsk)
+console = __external_var("console");
+window = __external_var("Function")("return this")();
+d = 4;
+fn sum(a, b, c) {
+    nonlocal d;
+    d = 5;
+    return a + b + c + d;
+}
+sum(1, 2, 3, 0, , /*undefined*/, 10); // Empty holes will be replaced by undefined
+sum(4, 5, 6, , , ); // Empty holes at the call params end will get stripped
+sum(7, 8, 9, undefined); // Undefined value also will get stripped
+console.log(sum(a, b, c));
+window.sum = sum;
+async fn promise(value) {
+   return await __external_var("pr")(value);
+}
+console.log(await promise(0));
+fn Stream(text) {
+    index = 0;
+    obj = __external_var("{}");
+    obj.next = text[0];
+    obj.move = fn () {
+        next = text[__index];
+        this.next = text[__index += 1];
+        return next;
+    }
+    return obj;
+}
+global = __external_var("Function")("return this")();
+global.Stream = Stream;
+array = [0, , , , 0];
+console.log(array[0]);
+fn _() {}
+async fn _2() { }
+async fn* _3() { }
+async fn* _4(a, b, c, d) {
+    yield 0;
+}
+fn* _5() {
+    // ...statments
+}
+if (true /* expression */) {
+    // ...statments
+} else if (1 /* expression */) {
+    // ...statments
+} else {
+    // ...statments
+}
+
+// Absolutly valid shit
+a + if (b === 1) {
+    return 2;
+} else {
+    return b;
+}
+
+lol?.null?.dsa?.[2].p;
+p::(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+;;
+

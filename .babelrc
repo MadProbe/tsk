@@ -1,0 +1,15 @@
+{
+    "presets": [
+        [
+            "minify",
+            {
+                "typeConstructors": {
+                    "string": false
+                },
+                "evaluate": true,
+                "infinity": false
+            }
+        ]
+    ],
+    "comments": false
+}

@@ -1,0 +1,127 @@
+// Include statment includes code from specified file
+include "./example-module.tsk";
+// variable declarations
+a = 2;
+b = 4;
+c = 6;
+// __external_var is for exposing external variable 
+// (also can be used for executing statments that are implented in js but not yet in tsk)
+Function = __external_var("Function");
+console = __external_var("console");
+window = Function("return this")();
+pr = __external_var("pr");
+d = 4;
+fn sum(a, b, c) {
+    nonlocal d;
+    d = 5;
+    return a + b + c + d;
+}
+sum(1, 2, 3, 0, , /*undefined*/, 10); // Empty holes will be replaced by undefined
+sum(4, 5, 6, , , ); // Empty holes at the call params end will get stripped
+sum(7, 8, 9, undefined); // Undefined value also will get stripped
+console.log(sum(a, b, c));
+window.sum = sum;
+async fn promise(value) => await pr(value);
+console.log(await promise(a));
+fn Stream(text) {
+    index = 0;
+    obj = __external_var("{}");
+    obj.next = text[0];
+    obj.move = fn () {
+        next = text[__index];
+        this.next = text[__index += 1];
+        return next;
+    }
+    return obj;
+}
+global = Function("return this")();
+global.Stream = Stream;
+array = [0, , , , 0];
+console.log(array[0]);
+fn _() {}
+async fn _2() { }
+async fn* _3() { }
+async fn* _4(a, b, c, d) {
+    yield 0;
+}
+fn* _5() {
+    // ...statments
+}
+if (true /* expression */) {
+    // ...statments
+} else if (1 /* expression */) {
+    // ...statments
+} else {
+    // ...statments
+}
+// internal: console.log("Hello from internal stmt!");
+// Absolutly valid shit
+a + if (b === 1) {
+    return 2;
+} else {
+    return b;
+};
+
+lol = undefined;
+lol?.null?.dsa?.[2].p;
+lol?.null?.dsa?.[2].p;
+fn p() {
+    return arguments;
+}
+p::(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+async fn _temp() => {
+    await 0;
+    console.log(1);
+}
+fn* test() {
+    yield pr(1);
+    yield pr(2);
+    yield 3;
+    yield 4;
+    yield pr(5);
+}
+console.log(await.all test());
+_temp();
+console.log(2);
+kek = 0;
+lel = 10;
+keep(kek, lel) {
+    kek = 1;
+    lel = 2;
+    console.log(kek, lel);
+}
+console.log(kek, lel);
+
+fn leel() {}
+fn kok() {}
+proto = __external_var("{}");
+proto._ = fn () {}
+kok.prototype = leel.prototype = proto;
+new leel()?.l;
+new kok()?.dsa + new leel()._()?.j;
+new kok().l;
+fn restTest1(...args) {
+    console.log(args);
+}
+fn restTest2(_, ...args) {
+    console.log(args);
+}
+fn restTest3(...args, _) {
+    console.log(args, _);
+}
+fn restTest4(_, ...args, _2) {
+    console.log(args, _2);
+}
+restTest1(1, 2, 3);
+restTest2(1, 2, 3);
+restTest3(1, 2, 3);
+restTest4(1, 2, 3);
+class A extends leel with echo {
+    
+}
+__external("try{")
+null!;
+__external("}catch(e){console.error(e)}try{")
+new leel()._!.s;
+__external("}catch(e){console.error(e)}")
+//;~;

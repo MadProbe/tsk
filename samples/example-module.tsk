@@ -1,0 +1,6 @@
+fn sub(a, b) {
+    return a - b;
+}
+fn div(a, b) {
+    return a / b;
+}
