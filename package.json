@@ -1,6 +1,6 @@
 {
   "name": "tsk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The TSK programming language",
   "author": "MadProbe#7435",
   "license": "ISC",
@@ -25,7 +25,7 @@
     "build": "tsc && rollup build/out/lib/compiler.js -f iife -n \"compile\" --exports named --file build/bundle.js && babel build/bundle.js --out-file build/bundle.min.js ",
     "update": "npm uninstall @babel/cli @babel/core @types/node babel-preset-minify rollup && npm i @babel/cli @babel/core @types/node babel-preset-minify typescript@next rollup -D",
     "start": "node server.js",
-    "globalinstall": "npm pack && npm install -g ./tsk-0.1.0.tgz"
+    "globalinstall": "npm pack && npm install -g ./tsk-0.1.1.tgz"
   },
   "repository": {
     "type": "git",
