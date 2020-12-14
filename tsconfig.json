@@ -22,10 +22,5 @@
         "strict": true,
         "rootDir": "src",
         "outDir": "build/out",
-        "paths": {
-            "tsk": ["src/lib/compiler"]
-        },
-        "baseUrl": "./"
-    },
-    "include": ["./src"]
+    }
 }
