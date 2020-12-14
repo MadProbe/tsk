@@ -196,6 +196,18 @@ export function _emit(node, meta) {
         }
         return __text;
     }
+    function emitSlicedArguments() {
+        sp();
+        __text += "__call([].slice,";
+        sp();
+        __text += "arguments";
+        if (index || length !== 1) {
+            __text += ",";
+            sp();
+            __text += -(length - index);
+        }
+        __text += ")[0]";
+    }
     meta !== null && meta !== void 0 ? meta : (meta = {});
     (_a = meta.sp) !== null && _a !== void 0 ? _a : (meta.sp = "");
     body = node.body;
@@ -239,7 +251,11 @@ export function _emit(node, meta) {
             index = 0;
             var hasBody = body.length > 0 || elementParams.some(function (element) { return !!element["default"] || element.type === 1 /* Rest */; });
             for (; index < length; index++) {
-                var node_1 = elementParams[index], namae = node_1.name;
+                var node_1 = elementParams[index];
+                var namae = node_1.name;
+                if (node_1.type === 1 /* Rest */) {
+                    break;
+                }
                 if (typeof namae === "string") {
                     __text += node_1.name = name = "" + (node_1.type === 3 /* NoPrefix */ ? "" : "$") + (namae || randomVarName());
                 }
@@ -247,7 +263,7 @@ export function _emit(node, meta) {
                     throw "Destructing parameters are not supported yet";
                     //__text += _emit(name as unknown as Node, meta);
                 }
-                if (index + 1 < length) {
+                if (index + 1 < length && elementParams[index + 1].type !== 1 /* Rest */) {
                     __text += ",";
                     sp();
                 }
@@ -278,11 +294,47 @@ export function _emit(node, meta) {
             var hadRestParam = false;
             for (; index < length; index++) {
                 var node_2 = elementParams[index];
+                namae = node_2.name;
+                if (hadRestParam) {
+                    if (typeof namae === "string") {
+                        is();
+                        __text += node_2.name = name = "" + (node_2.type === 3 /* NoPrefix */ ? "" : "$") + (namae || randomVarName());
+                        if (node_2["default"]) {
+                            var _tempVar = randomVarName();
+                            declare(_tempVar);
+                            sp();
+                            __text += "=";
+                            sp();
+                            __text += "__nl(" + _tempVar;
+                            sp();
+                            __text += "=";
+                            emitSlicedArguments();
+                            __text += ")";
+                            sp();
+                            __text += "?";
+                            sp();
+                            __text += _emit(node_2["default"], meta);
+                            sp();
+                            __text += ":";
+                            __text += _tempVar + ")";
+                        }
+                        else {
+                            sp();
+                            __text += "=";
+                            emitSlicedArguments();
+                        }
+                        __text += index + 1 < length ? "," : ";";
+                        nl();
+                    }
+                    else {
+                        throw "Destructing parameters are not supported yet";
+                        //__text += _emit(name as unknown as Node, meta);
+                    }
+                }
                 if (node_2.type === 1 /* Rest */) {
                     hadRestParam = true;
                     is();
-                    name = typeof node_2.name === "string" ? node_2.name : _emit(node_2.name, meta);
-                    __text += "var " + name;
+                    __text += "var " + ("$" + (namae || randomVarName()));
                     sp();
                     __text += "=";
                     sp();
@@ -299,13 +351,13 @@ export function _emit(node, meta) {
                             __text += -(length - index - 1);
                         }
                     }
-                    __text += ");";
+                    __text += ")" + (index + 1 < length ? "," : ";");
                     nl();
+                    hadRestParam = true;
                 }
-                if (node_2["default"]) {
+                if (node_2["default"] && !hadRestParam) {
                     is();
-                    name || (name = typeof node_2.name === "string" ? node_2.name : _emit(node_2.name, meta));
-                    __text += name;
+                    __text += name || (name = typeof node_2.name === "string" ? node_2.name : _emit(node_2.name, meta));
                     sp();
                     __text += "===";
                     sp();
@@ -579,6 +631,7 @@ export function _emit(node, meta) {
             if (_) {
                 __text += "]";
             }
+            break;
         case 74 /* AwaitExpression */:
             assert(_);
             assert(body);

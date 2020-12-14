@@ -73,14 +73,10 @@ async fn _temp() => {
     await 0;
     console.log(1);
 }
-fn* test() {
-    yield pr(1);
-    yield pr(2);
-    yield 3;
-    yield 4;
-    yield pr(5);
+fn* test(...args) {
+    yield* args;
 }
-console.log(await.all test());
+console.log(await.all test(pr(1), pr(2), pr(3), 4, 5, 6, pr(7)));
 _temp();
 console.log(2);
 kek = 0;
@@ -112,10 +108,14 @@ fn restTest3(...args, _) {
 fn restTest4(_, ...args, _2) {
     console.log(args, _2);
 }
+fn restTest5(_, ...args, _2, _3, _4) {
+    console.log(args, _2, _3, _4);
+}
 restTest1(1, 2, 3);
 restTest2(1, 2, 3);
 restTest3(1, 2, 3);
 restTest4(1, 2, 3);
+restTest5(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 class A extends leel with echo {
     
 }

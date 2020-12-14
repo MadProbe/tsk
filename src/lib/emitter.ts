@@ -194,6 +194,18 @@ export function _emit(node: Node, meta: any) {
         }
         return __text;
     }
+    function emitSlicedArguments() {
+        sp();
+        __text += `__call([].slice,`;
+        sp();
+        __text += "arguments";
+        if (index || length !== 1) {
+            __text += `,`;
+            sp();
+            __text += -(length - index);
+        }
+        __text += ")[0]";
+    }
     meta ??= {};
     meta.sp ??= "";
     body = node.body!;
@@ -236,14 +248,18 @@ export function _emit(node: Node, meta: any) {
             index = 0;
             var hasBody = body.length > 0 || elementParams.some(element => !!element.default || element.type === ParameterNodeType.Rest);
             for (; index < length; index++) {
-                let node = elementParams[index], namae = node.name;
+                let node = elementParams[index];
+                var namae = node.name;
+                if (node.type === ParameterNodeType.Rest) {
+                    break;
+                }
                 if (typeof namae === "string") {
                     __text += node.name = name = `${ node.type === ParameterNodeType.NoPrefix ? "" : "$" }${ namae || randomVarName() }`;
                 } else {
                     throw "Destructing parameters are not supported yet";
                     //__text += _emit(name as unknown as Node, meta);
                 }
-                if (index + 1 < length) {
+                if (index + 1 < length && elementParams[index + 1].type !== ParameterNodeType.Rest) {
                     __text += ",";
                     sp();
                 }
@@ -274,11 +290,45 @@ export function _emit(node: Node, meta: any) {
             var hadRestParam = false;
             for (; index < length; index++) {
                 let node = elementParams[index];
+                namae = node.name;
+                if (hadRestParam) {
+                    if (typeof namae === "string") {
+                        is();
+                        __text += node.name = name = `${ node.type === ParameterNodeType.NoPrefix ? "" : "$" }${ namae || randomVarName() }`;
+                        if (node.default) {
+                            var _tempVar = randomVarName();
+                            declare(_tempVar);
+                            sp();
+                            __text += "=";
+                            sp();
+                            __text += `__nl(${ _tempVar }`;
+                            sp();
+                            __text += "=";
+                            emitSlicedArguments();
+                            __text += ")";
+                            sp();
+                            __text += "?";
+                            sp();
+                            __text += _emit(node.default, meta);
+                            sp();
+                            __text += ":";
+                            __text += `${ _tempVar })`;
+                        } else {
+                            sp();
+                            __text += "=";
+                            emitSlicedArguments();
+                        }
+                        __text += index + 1 < length ? "," : ";";
+                        nl();
+                    } else {
+                        throw "Destructing parameters are not supported yet";
+                        //__text += _emit(name as unknown as Node, meta);
+                    }
+                }
                 if (node.type === ParameterNodeType.Rest) {
                     hadRestParam = true;
                     is();
-                    name = typeof node.name === "string" ? node.name : _emit(node.name, meta);
-                    __text += `var ${ name }`;
+                    __text += `var ${ `$${ namae || randomVarName() }` }`;
                     sp();
                     __text += "=";
                     sp();
@@ -295,13 +345,13 @@ export function _emit(node: Node, meta: any) {
                             __text += -(length - index - 1);
                         }
                     }
-                    __text += ");";
+                    __text += `)${ index + 1 < length ? "," : ";" }`;
                     nl();
+                    hadRestParam = true;
                 }
-                if (node.default) {
+                if (node.default && !hadRestParam) {
                     is();
-                    name || (name = typeof node.name === "string" ? node.name : _emit(node.name, meta));
-                    __text += name;
+                    __text += name || (name = typeof node.name === "string" ? node.name : _emit(node.name, meta));
                     sp();
                     __text += "===";
                     sp();
@@ -598,6 +648,7 @@ export function _emit(node: Node, meta: any) {
             if (_) {
                 __text += "]";
             }
+            break;
 
         case Nodes.AwaitExpression:
             assert<boolean>(_);
