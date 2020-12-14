@@ -3,6 +3,6 @@
 build/deps
 index.js
 index.html
-server.json
+server.js
 node_modules
 tsk-*.tgz
