@@ -483,7 +483,7 @@ export function _emit(node: Node, meta: any) {
             index = 0;
             for (; index < length; index++) {
                 let node = body[index];
-                __text += _emit(node, meta);
+                __text += _emit(as_expression(node), meta);
                 if (index + 1 < length) {
                     __text += ",";
                     sp();

@@ -10,8 +10,8 @@ import {
     resetCounter,
     undefined,
     _echo,
-    SyntaxError, 
-    inspectLog, 
+    SyntaxError,
+    inspectLog,
     randomVarName,
     includes
 } from "./utils/util.js";
@@ -37,7 +37,12 @@ export interface Node {
     else?: Node;
     elseif?: Node;
 }
-export interface ClassMethod {
+export interface ClassProperty {
+    name: Node;
+    body: Node;
+}
+// @ts-ignore
+export interface ClassMethod extends ClassProperty {
     body: Node[];
     decorators: Node[];
     params: ParameterNode[];
@@ -51,6 +56,9 @@ export interface ClassSetter extends ClassMethod {
 export interface ClassConstructor {
     body: Node[];
     params: ParameterNode[];
+}
+export interface ClassNodeProperty extends ClassProperty {
+    body: Node;
 }
 export interface ClassNodeProps {
     methods: ClassMethod[];
@@ -83,12 +91,13 @@ export interface AccessChainItem {
     body: Node;
 }
 export type SyntaxTree = Node[];
-function parseMemberAccess(sym: Node, next: Token, stream: TokenStream, meta: ParseMeta) {
+const meberAccessOperators = [".", "?.", "!.", "![", "?.[", "["] as const;
+function _parseMemberAccess(sym: Node, next: Token, stream: TokenStream, meta: ParseMeta) {
     var chain = [{
         kind: AccessChainItemKind.Head,
         body: sym
     }] as AccessChainItem[];
-    while (next[0] === Tokens.Operator && includes([".", "?.", "!.", "![", "?.[", "["] as const, next[1])) {
+    while (next[0] === Tokens.Operator && includes(meberAccessOperators, next[1])) {
         if (next[1] === ".") {
             next = next_and_skip_shit_or_fail(stream, "symbol");
             if (next[0] !== Tokens.Symbol && next[0] !== Tokens.Keyword) {
@@ -169,10 +178,13 @@ function parseMemberAccess(sym: Node, next: Token, stream: TokenStream, meta: Pa
         next = next_and_skip_shit_or_fail(stream, "any");
     }
     downgrade_next(stream);
+    return chain;
+}
+function parseMemberAccess(sym: Node, next: Token, stream: TokenStream, meta: ParseMeta) {
     return _parse({
         name: Nodes.MemberAccessExpression,
         type: NodeType.Expression,
-        body: chain,
+        body: _parseMemberAccess(sym, next, stream, meta),
     }, stream, meta);
 }
 function isNode(value: any): value is Node {
@@ -665,7 +677,8 @@ var keywordsHandlers = {
             }
         }
         if (!type && !node.symbolName) {
-            diagnostics.push(Diagnostic(DiagnosticSeverity.Warn, "Class statment doesn't have a name - a random name will be given during compilation"));
+            diagnostics.push(Diagnostic(DiagnosticSeverity.Warn, "Class statment doesn't have a name - " +
+                "a random name will be given during compilation"));
             node.symbolName = randomVarName();
         }
         if (next[0] === Tokens.Special && next[1] === "{") {
@@ -675,7 +688,7 @@ var keywordsHandlers = {
                     var next2 = next_and_skip_shit_or_fail(stream, ["=", "symbol", "("].join('" | "'), prefix);
                     if (next[0] === Tokens.Keyword)
                         if (next2[0] === Tokens.Symbol && includes(["get", "set", "async"] as const, next[1])) {
-                            
+
                         }
                 }
             }
@@ -706,7 +719,8 @@ var keywordsHandlers = {
     },
     await(stream: import("./utils/stream.js").TokenStream, meta: ParseMeta) {
         if (meta.outer.name === Nodes.FunctionExpression) {
-            diagnostics.push(Diagnostic(DiagnosticSeverity.RuntimeError, `Using await inside Sync Function Expression will fail at runtime`));
+            diagnostics.push(Diagnostic(DiagnosticSeverity.RuntimeError,
+                `Using await inside Sync Function Expression will fail at runtime`));
         }
         if (meta.outer.name === Nodes.GeneratorFunctionExpression) {
             diagnostics.push(Diagnostic(DiagnosticSeverity.Warn, `Await is not intended to be used inside Generator Functions`));
@@ -767,14 +781,26 @@ var keywordsHandlers = {
                     next = next_and_skip_shit_or_fail(stream, end_expression);
                     continue;
                 } else {
-                    var arg = _parse(next, stream, meta) as Node | [Node];
-                }
-                if (isArray(arg)) {
-                    next = stream.next;
-                    arg = arg[0];
-                } else next = next_and_skip_shit_or_fail(stream, ")");
-                if (!~[Nodes.MemberAccessExpression, Nodes.ArgumentsObject, Nodes.Symbol, Nodes.SymbolNoPrefix].indexOf(arg.name)) {
-
+                    var next2, isConstantObject = next[0] === Tokens.Keyword && includes(["this", "arguments"] as const, next[1]), 
+                    arg = (isConstantObject ? keywordsHandlers[next[1]]() : {
+                        name: Nodes.Symbol,
+                        type: NodeType.Expression,
+                        symbolName: next[1]
+                    }) as Node;
+                    if (!(isConstantObject || next[0] === Tokens.Symbol)) {
+                        error_unexcepted_token(next);
+                    }
+                    next2 = next_and_skip_shit_or_fail(stream, [',', ')'].join('" | "') + meberAccessOperators.join('" | "'), prefix);
+                    if (next2[0] === Tokens.Operator && includes(meberAccessOperators, next2[1])) {
+                        arg = {
+                            name: Nodes.MemberAccessExpression,
+                            type: NodeType.Expression,
+                            body: _parseMemberAccess(arg, next, stream, meta),
+                        };
+                    } else {
+                        isConstantObject && diagnostics.push(Diagnostic(DiagnosticSeverity.RuntimeError, `Assignment to "${ next[0] }" will fail at runtime!`));
+                        next = next2;
+                    }
                 }
                 args.push(arg);
                 if (next[0] === Tokens.Special) {
@@ -830,6 +856,10 @@ var keywordsHandlers = {
             }
         }
         return is_array ? [node] : node;
+    },
+    // TODO
+    try() {
+        return undefined!;
     }
 } as { [key: string]: (...args: any[]) => Readonly<Node> | [Readonly<Node>]; };
 /**
@@ -934,11 +964,130 @@ function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta): Node
     } else if (next[0] === Tokens.Number) {
         assert<Token>(next);
         let _temp = next[1];
-        return {
+        _sym = {
             name: Nodes.NumberValue,
             type: NodeType.Expression,
             body: _temp
         };
+        next = next_and_skip_shit_or_fail(stream, end_expression, "Number expression:");
+        if (next[0] !== Tokens.Operator && next[0] !== Tokens.Special) {
+            error_unexcepted_token(next);
+        }
+        switch (next[1]) {
+            case "{":
+            case ")":
+            case "}":
+            case "]":
+            case ",":
+            case ";":
+                return [_sym];
+
+
+            case "(":
+            case "?.(":
+                // console.log("():", next);
+                diagnostics.push(Diagnostic(DiagnosticSeverity.RuntimeError,
+                    "Call on number will fail at runtime because number is not callable."));
+                var args = parse_call_expression(next_and_skip_shit_or_fail(stream, ")", "Call expression:"), stream, meta);
+                remove_trailing_undefined(args);
+                node = {
+                    name: next[1] === "(" ? Nodes.CallExpression : Nodes.OptionalCallExpression,
+                    type: NodeType.Expression,
+                    body: [_sym],
+                    args: args
+                };
+                return _parse(node, stream, meta);
+
+            case ".":
+            case "[":
+            case "!.":
+            case "![":
+            case "?.":
+            case "?.[": {
+                let body = next[1];
+                assert<string>(_);
+                if (body === ".") {
+                    diagnostics.push(Diagnostic(DiagnosticSeverity.Warn,
+                        "Please disambiguate normal member access expression when member access " +
+                        "performed on number value by wrapping nubmer value in parenthezis"));
+                }
+                if (includes(["!.", "![", "?.", "?.["] as const, body)) {
+                    var isDotMemberAccess = body == "!." || body == "?.";
+                    diagnostics.push(Diagnostic(DiagnosticSeverity.Warn,
+                        (body == "![" || body == "!." ? "Null assertive" : "Optional") +
+                        `${ isDotMemberAccess ? "" : " computed" } member access doesn't have ` +
+                        "any effect when performed on number value, assertion will be stripped."));
+                    next[1] = isDotMemberAccess ? "." : "[";
+                }
+                return parseMemberAccess({
+                    name: Nodes.GroupExpression,
+                    type: NodeType.Expression,
+                    body: [_sym]
+                }, next, stream, meta);
+            }
+
+            case "=>":
+                if (_sym.name !== Nodes.Symbol) {
+                    throw SyntaxError("Arrow functions shortcut cannot contain non-symbol parameter");
+                }
+                node = {
+                    name: Nodes.FunctionExpression,
+                    type: NodeType.Expression,
+                    params: [{ name: _sym.symbolName, type: ParameterNodeType.Normal }],
+                    locals: [] as string[],
+                    nonlocals: [] as string[]
+                } as Node;
+                var innerMeta = { outer: node, filename: meta.filename };
+                next = next_and_skip_shit_or_fail(stream, end_expression);
+                if (next[0] !== Tokens.Special && next[1] !== "{") {
+                    return abruptify(node, abruptify({
+                        name: Nodes.ReturnStatment,
+                        type: NodeType.Statment
+                    }, _parse(next, stream, innerMeta)));
+                } else {
+                    return (node.body = parse_body(stream, innerMeta), node);
+                }
+
+            case "::":
+                prefix = "Argument binding expression: ";
+                next = next_and_skip_shit_or_fail(stream, "(", prefix);
+                if (next[0] !== Tokens.Special || next[1] !== "(") {
+                    error_unexcepted_token(next);
+                }
+                next = next_and_skip_shit_or_fail(stream, ")", prefix);
+                var args = parse_call_expression(next, stream, meta);
+                return {
+                    name: Nodes.ArgumentBindingExpression,
+                    type: NodeType.Expression,
+                    body: [_sym],
+                    args
+                };
+
+            case "!":
+                node = _parse(_sym, stream, meta) as Node;
+                diagnostics.push(Diagnostic(DiagnosticSeverity.Warn, 
+                    "Null assertion expression doesn't have any effect on number value, " +
+                    "null assertion operator will be stripped in output"));
+                return node as Node | [Node];
+
+            default:
+                parsed = parse_common_expressions(_sym, next, stream, meta)!;
+                if (next[1] in AssignmentOperatorTable) {
+                    diagnostics.push(Diagnostic(DiagnosticSeverity.RuntimeError, "Assignment on number will fail at runtime."));
+                    parsed = parse_assignment(_sym, next, stream, meta)!;
+                }
+                if (!parsed) {
+                    diagnostics.push(Diagnostic(DiagnosticSeverity.Warn, `Operator "${ next[1] }" is not supported`));
+                    parsed = _sym;
+                }
+                var _ = parsed && parsed.body;
+                if (_ && parsed.symbolName && isArray<Node | AccessChainItem>(_[1])) {
+                    assert<Node[] | string[] | AccessChainItem[]>(_);
+                    _[1] = _[1][0];
+                    parsed = [parsed];
+                }
+                return parsed;
+        }
         // @ts-ignore
     } else if (next[0] === Tokens.Range) {
         assert<Token>(next);
@@ -1068,16 +1217,20 @@ function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta): Node
 
             default:
                 parsed = parse_common_expressions(_sym, next, stream, meta) || parse_assignment(_sym, next, stream, meta)!;
+                if (!parsed) {
+                    diagnostics.push(Diagnostic(DiagnosticSeverity.Warn, `Operator "${ next[1] }" is not supported`));
+                    parsed = _sym;
+                }
                 var _ = parsed && parsed.body;
                 if (_ && parsed.symbolName && isArray<Node | AccessChainItem>(_[1])) {
                     assert<Node[] | string[] | AccessChainItem[]>(_);
                     _[1] = _[1][0];
                     parsed = [parsed];
                 }
-                return parsed || _sym;
+                return parsed;
         }
     } else if (next[0] === Tokens.Comment || next[0] === Tokens.MultilineComment || next[0] === Tokens.Whitespace) {
-
+        // return (void next)!;
     } else if (next[0] === Tokens.Special && ~[";", ")", "}", ","].indexOf(next[1])) {
         // throw +(next[1] === ",");
     } else if (next[0] === Tokens.Special) {

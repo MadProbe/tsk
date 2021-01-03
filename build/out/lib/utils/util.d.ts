@@ -16,7 +16,7 @@ export declare function nullish(arg: unknown): arg is null | undefined;
  */
 export declare function _echo<T>(value: T): T;
 export declare var undefined: undefined;
-export declare function randomVarName(): string;
+export declare function randomVarName(): `_${string}`;
 export declare function resetCounter(): void;
 export declare function assert<T>(value: unknown): asserts value is T;
 export declare function log_errors(errors: any[]): void;

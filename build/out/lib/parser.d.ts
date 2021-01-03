@@ -17,7 +17,11 @@ export interface Node {
     else?: Node;
     elseif?: Node;
 }
-export interface ClassMethod {
+export interface ClassProperty {
+    name: Node;
+    body: Node;
+}
+export interface ClassMethod extends ClassProperty {
     body: Node[];
     decorators: Node[];
     params: ParameterNode[];
@@ -33,6 +37,9 @@ export interface ClassSetter extends ClassMethod {
 export interface ClassConstructor {
     body: Node[];
     params: ParameterNode[];
+}
+export interface ClassNodeProperty extends ClassProperty {
+    body: Node;
 }
 export interface ClassNodeProps {
     methods: ClassMethod[];

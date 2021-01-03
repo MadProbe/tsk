@@ -377,12 +377,13 @@ var compile = (function (exports) {
     };
 
     // @ts-check
-    function parseMemberAccess(sym, next, stream, meta) {
+    var meberAccessOperators = [".", "?.", "!.", "![", "?.[", "["];
+    function _parseMemberAccess(sym, next, stream, meta) {
         var chain = [{
                 kind: 0 /* Head */,
                 body: sym
             }];
-        while (next[0] === 3 /* Operator */ && includes([".", "?.", "!.", "![", "?.[", "["], next[1])) {
+        while (next[0] === 3 /* Operator */ && includes(meberAccessOperators, next[1])) {
             if (next[1] === ".") {
                 next = next_and_skip_shit_or_fail(stream, "symbol");
                 if (next[0] !== 2 /* Symbol */ && next[0] !== 8 /* Keyword */) {
@@ -472,10 +473,13 @@ var compile = (function (exports) {
             next = next_and_skip_shit_or_fail(stream, "any");
         }
         downgrade_next(stream);
+        return chain;
+    }
+    function parseMemberAccess(sym, next, stream, meta) {
         return _parse({
             name: 43 /* MemberAccessExpression */,
             type: 1 /* Expression */,
-            body: chain
+            body: _parseMemberAccess(sym, next, stream, meta)
         }, stream, meta);
     }
     function isNode(value) {
@@ -959,7 +963,8 @@ var compile = (function (exports) {
                 }
             }
             if (!type && !node.symbolName) {
-                diagnostics.push(Diagnostic(1 /* Warn */, "Class statment doesn't have a name - a random name will be given during compilation"));
+                diagnostics.push(Diagnostic(1 /* Warn */, "Class statment doesn't have a name - " +
+                    "a random name will be given during compilation"));
                 node.symbolName = randomVarName();
             }
             if (next[0] === 4 /* Special */ && next[1] === "{") {
@@ -1066,15 +1071,27 @@ var compile = (function (exports) {
                         continue;
                     }
                     else {
-                        var arg = _parse(next, stream, meta);
+                        var next2, isConstantObject = next[0] === 8 /* Keyword */ && includes(["this", "arguments"], next[1]), arg = (isConstantObject ? keywordsHandlers[next[1]]() : {
+                            name: 54 /* Symbol */,
+                            type: 1 /* Expression */,
+                            symbolName: next[1]
+                        });
+                        if (!(isConstantObject || next[0] === 2 /* Symbol */)) {
+                            error_unexcepted_token(next);
+                        }
+                        next2 = next_and_skip_shit_or_fail(stream, [',', ')'].join('" | "') + meberAccessOperators.join('" | "'), prefix);
+                        if (next2[0] === 3 /* Operator */ && includes(meberAccessOperators, next2[1])) {
+                            arg = {
+                                name: 43 /* MemberAccessExpression */,
+                                type: 1 /* Expression */,
+                                body: _parseMemberAccess(arg, next, stream, meta)
+                            };
+                        }
+                        else {
+                            isConstantObject && diagnostics.push(Diagnostic(2 /* RuntimeError */, "Assignment to \"" + next[0] + "\" will fail at runtime!"));
+                            next = next2;
+                        }
                     }
-                    if (isArray(arg)) {
-                        next = stream.next;
-                        arg = arg[0];
-                    }
-                    else
-                        next = next_and_skip_shit_or_fail(stream, ")");
-                    if (!~[43 /* MemberAccessExpression */, 80 /* ArgumentsObject */, 54 /* Symbol */, 75 /* SymbolNoPrefix */].indexOf(arg.name)) ;
                     args.push(arg);
                     if (next[0] === 4 /* Special */) {
                         if (next[1] === ")") {
@@ -1131,6 +1148,10 @@ var compile = (function (exports) {
                 }
             }
             return is_array ? [node] : node;
+        },
+        // TODO
+        "try": function () {
+            return undefined$1;
         }
     };
     /**
@@ -1233,11 +1254,118 @@ var compile = (function (exports) {
         }
         else if (next[0] === 1 /* Number */) {
             var _temp = next[1];
-            return {
+            _sym = {
                 name: 51 /* NumberValue */,
                 type: 1 /* Expression */,
                 body: _temp
             };
+            next = next_and_skip_shit_or_fail(stream, end_expression, "Number expression:");
+            if (next[0] !== 3 /* Operator */ && next[0] !== 4 /* Special */) {
+                error_unexcepted_token(next);
+            }
+            switch (next[1]) {
+                case "{":
+                case ")":
+                case "}":
+                case "]":
+                case ",":
+                case ";":
+                    return [_sym];
+                case "(":
+                case "?.(":
+                    // console.log("():", next);
+                    diagnostics.push(Diagnostic(2 /* RuntimeError */, "Call on number will fail at runtime because number is not callable."));
+                    var args = parse_call_expression(next_and_skip_shit_or_fail(stream, ")", "Call expression:"), stream, meta);
+                    remove_trailing_undefined(args);
+                    node = {
+                        name: next[1] === "(" ? 41 /* CallExpression */ : 42 /* OptionalCallExpression */,
+                        type: 1 /* Expression */,
+                        body: [_sym],
+                        args: args
+                    };
+                    return _parse(node, stream, meta);
+                case ".":
+                case "[":
+                case "!.":
+                case "![":
+                case "?.":
+                case "?.[": {
+                    var body_1 = next[1];
+                    if (body_1 === ".") {
+                        diagnostics.push(Diagnostic(1 /* Warn */, "Please disambiguate normal member access expression when member access " +
+                            "performed on number value by wrapping nubmer value in parenthezis"));
+                    }
+                    if (includes(["!.", "![", "?.", "?.["], body_1)) {
+                        var isDotMemberAccess = body_1 == "!." || body_1 == "?.";
+                        diagnostics.push(Diagnostic(1 /* Warn */, (body_1 == "![" || body_1 == "!." ? "Null assertive" : "Optional") +
+                            ((isDotMemberAccess ? "" : " computed") + " member access doesn't have ") +
+                            "any effect when performed on number value, assertion will be stripped."));
+                        next[1] = isDotMemberAccess ? "." : "[";
+                    }
+                    return parseMemberAccess({
+                        name: 6 /* GroupExpression */,
+                        type: 1 /* Expression */,
+                        body: [_sym]
+                    }, next, stream, meta);
+                }
+                case "=>":
+                    if (_sym.name !== 54 /* Symbol */) {
+                        throw _SyntaxError("Arrow functions shortcut cannot contain non-symbol parameter");
+                    }
+                    node = {
+                        name: 0 /* FunctionExpression */,
+                        type: 1 /* Expression */,
+                        params: [{ name: _sym.symbolName, type: 0 /* Normal */ }],
+                        locals: [],
+                        nonlocals: []
+                    };
+                    var innerMeta = { outer: node, filename: meta.filename };
+                    next = next_and_skip_shit_or_fail(stream, end_expression);
+                    if (next[0] !== 4 /* Special */ && next[1] !== "{") {
+                        return abruptify(node, abruptify({
+                            name: 64 /* ReturnStatment */,
+                            type: 0 /* Statment */
+                        }, _parse(next, stream, innerMeta)));
+                    }
+                    else {
+                        return (node.body = parse_body(stream, innerMeta), node);
+                    }
+                case "::":
+                    prefix = "Argument binding expression: ";
+                    next = next_and_skip_shit_or_fail(stream, "(", prefix);
+                    if (next[0] !== 4 /* Special */ || next[1] !== "(") {
+                        error_unexcepted_token(next);
+                    }
+                    next = next_and_skip_shit_or_fail(stream, ")", prefix);
+                    var args = parse_call_expression(next, stream, meta);
+                    return {
+                        name: 79 /* ArgumentBindingExpression */,
+                        type: 1 /* Expression */,
+                        body: [_sym],
+                        args: args
+                    };
+                case "!":
+                    node = _parse(_sym, stream, meta);
+                    diagnostics.push(Diagnostic(1 /* Warn */, "Null assertion expression doesn't have any effect on number value, " +
+                        "null assertion operator will be stripped in output"));
+                    return node;
+                default:
+                    parsed = parse_common_expressions(_sym, next, stream, meta);
+                    if (next[1] in AssignmentOperatorTable) {
+                        diagnostics.push(Diagnostic(2 /* RuntimeError */, "Assignment on number will fail at runtime."));
+                        parsed = parse_assignment(_sym, next, stream, meta);
+                    }
+                    if (!parsed) {
+                        diagnostics.push(Diagnostic(1 /* Warn */, "Operator \"" + next[1] + "\" is not supported"));
+                        parsed = _sym;
+                    }
+                    var _ = parsed && parsed.body;
+                    if (_ && parsed.symbolName && isArray(_[1])) {
+                        _[1] = _[1][0];
+                        parsed = [parsed];
+                    }
+                    return parsed;
+            }
             // @ts-ignore
         }
         else if (next[0] === 9 /* Range */) {
@@ -1364,12 +1492,16 @@ var compile = (function (exports) {
                     return node;
                 default:
                     parsed = parse_common_expressions(_sym, next, stream, meta) || parse_assignment(_sym, next, stream, meta);
+                    if (!parsed) {
+                        diagnostics.push(Diagnostic(1 /* Warn */, "Operator \"" + next[1] + "\" is not supported"));
+                        parsed = _sym;
+                    }
                     var _ = parsed && parsed.body;
                     if (_ && parsed.symbolName && isArray(_[1])) {
                         _[1] = _[1][0];
                         parsed = [parsed];
                     }
-                    return parsed || _sym;
+                    return parsed;
             }
         }
         else if (next[0] === 7 /* Comment */ || next[0] === 10 /* MultilineComment */ || next[0] === 6 /* Whitespace */) ;
@@ -2077,7 +2209,7 @@ var compile = (function (exports) {
                 index = 0;
                 for (; index < length; index++) {
                     var node_4 = body[index];
-                    __text += _emit(node_4, meta);
+                    __text += _emit(as_expression(node_4), meta);
                     if (index + 1 < length) {
                         __text += ",";
                         sp();
