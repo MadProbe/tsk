@@ -11,3 +11,4 @@ syntax.md
 package-lock.json
 tsk-*.tgz
 node_modules
+tsconfig.json
