@@ -11,7 +11,7 @@ TSK Complier transplies tsk code into valid JavaScript code and is written in Ty
 5. Install dependencies by running `npm install` (`npm i` does same)
 6. Build project using `npm run build`.
 7. To install compiler write `npm run globalinstall`.
-8. Also recommend to install node-fetch as global module by using `npm i -g node-fetch` command, by that allowing fetching web scripts from node.
+8. Also recommend to install node-fetch as global module by using `npm i -g node-fetch` command, by that allowing compiler fetching tsk scripts from web.
 
 ## Build
 Build project using `npm run build`.
