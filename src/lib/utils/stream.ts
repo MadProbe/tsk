@@ -1,4 +1,4 @@
-import { Tokens } from "../enums";
+import type { Tokens } from "../enums";
 
 type Streamable = {
     [index: number]: any;
