@@ -22,13 +22,13 @@ import { _emit } from "./emitter.js";
 import { AssignmentOperatorTable } from "./utils/table.js";
 import { Diagnostic, IDiagnostic } from "./utils/diagnostics.js";
 import { js_auto_variables, end_expression } from "./utils/constants.js";
-import { parseMemberAccess } from "./parsers/member-access";
-import { next_and_skip_shit_or_fail } from "./utils/advancers";
-import { parse_call_expression } from "./parsers/call-expression";
-import { parse_body } from "./parsers/body-parser";
-import { parse_common_expressions } from "./parsers/common-expressions";
-import { parse_assignment } from "./parsers/assignments";
-import { keywordsHandlers } from "./keywords";
+import { parseMemberAccess } from "./parsers/member-access.js";
+import { next_and_skip_shit_or_fail } from "./utils/advancers.js";
+import { parse_call_expression } from "./parsers/call-expression.js";
+import { parse_body } from "./parsers/body-parser.js";
+import { parse_common_expressions } from "./parsers/common-expressions.js";
+import { parse_assignment } from "./parsers/assignments.js";
+import { keywordsHandlers } from "./keywords.js";
 
 
 export type NodeName = Nodes;

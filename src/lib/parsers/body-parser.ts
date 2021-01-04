@@ -2,8 +2,8 @@ import { Token, TokenStream } from "../utils/stream.js";
 import { isArray } from "../utils/util.js";
 import { Tokens, DiagnosticSeverity } from "../enums";
 import { Diagnostic } from "../utils/diagnostics.js";
-import { next_and_skip_shit_or_fail } from "../utils/advancers";
-import { ParseMeta, Node, _parse, diagnostics } from "../parser";
+import { next_and_skip_shit_or_fail } from "../utils/advancers.js";
+import { ParseMeta, Node, _parse, diagnostics } from "../parser.js";
 
 /**
  * @param {import("./utils/stream.js").TokenStream} stream

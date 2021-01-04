@@ -1,4 +1,4 @@
-import { Nodes } from "../enums.js";
+import { Nodes } from "../enums";
 
 export type CommonOperatorTableType = typeof CommonOperatorTable;
 export type CommonOperatorTableKeys = keyof CommonOperatorTableType;

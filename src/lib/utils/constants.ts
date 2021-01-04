@@ -1,4 +1,4 @@
-import { _echo } from "./_echo";
+import { _echo } from "./_echo.js";
 export const meberAccessOperators = [".", "?.", "!.", "![", "?.[", "["] as const;
 export const end_expression = _echo("expression");
 export const js_auto_variables = ["__external_var", "this", "arguments", "null", "NaN", "undefined", "Infinity", "true", "false"] as const;

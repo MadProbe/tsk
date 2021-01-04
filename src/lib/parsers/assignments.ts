@@ -3,8 +3,8 @@ import { Nodes, NodeType, AccessChainItemKind, DiagnosticSeverity } from "../enu
 import { AssignmentOperatorTable, AssignmentOperatorTableKeys } from "../utils/table.js";
 import { Diagnostic } from "../utils/diagnostics.js";
 import { end_expression } from "../utils/constants.js";
-import { next_and_skip_shit_or_fail } from "../utils/advancers";
-import { Node, ParseMeta, AccessChainItem, diagnostics, _parse } from "../parser";
+import { next_and_skip_shit_or_fail } from "../utils/advancers.js";
+import { Node, ParseMeta, AccessChainItem, diagnostics, _parse } from "../parser.js";
 
 export function parse_assignment(_sym: Node, next: Token, stream: TokenStream, meta: ParseMeta): Node | undefined {
     if (name = AssignmentOperatorTable[next[1] as AssignmentOperatorTableKeys] as Nodes | undefined) {

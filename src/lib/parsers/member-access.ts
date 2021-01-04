@@ -2,8 +2,8 @@ import { Token, TokenStream } from "../utils/stream.js";
 import { isArray, includes, error_unexcepted_token } from "../utils/util.js";
 import { Nodes, NodeType, AccessChainItemKind, Tokens } from "../enums";
 import { meberAccessOperators, end_expression } from "../utils/constants.js";
-import { Node, ParseMeta, AccessChainItem, __parse, __used, _parse } from "../parser";
-import { next_and_skip_shit_or_fail, downgrade_next } from "../utils/advancers";
+import { Node, ParseMeta, AccessChainItem, __parse, __used, _parse } from "../parser.js";
+import { next_and_skip_shit_or_fail, downgrade_next } from "../utils/advancers.js";
 
 export function _parseMemberAccess(sym: Node, next: Token, stream: TokenStream, meta: ParseMeta) {
     var chain = [{

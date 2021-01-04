@@ -3,8 +3,8 @@ import { isArray } from "../utils/util.js";
 import { Nodes, NodeType } from "../enums";
 import { CommonOperatorTable, CommonOperatorTableKeys } from "../utils/table.js";
 import { end_expression } from "../utils/constants.js";
-import { next_and_skip_shit_or_fail } from "../utils/advancers";
-import { Node, ParseMeta, _parse } from "../parser";
+import { next_and_skip_shit_or_fail } from "../utils/advancers.js";
+import { Node, ParseMeta, _parse } from "../parser.js";
 
 export function parse_common_expressions(_sym: Node, next: Token, stream: TokenStream, meta: ParseMeta) {
     var parsed: Node, node: Node, name = CommonOperatorTable[next[1] as CommonOperatorTableKeys] as Nodes | undefined;

@@ -9,16 +9,16 @@ import {
     error_unexcepted_token,
     abruptify
 } from "./utils/util.js";
-import { _echo } from "./utils/_echo";
+import { _echo } from "./utils/_echo.js";
 import { FNNodeType, Nodes, ParameterNodeType, NodeType, AccessChainItemKind, Tokens, DiagnosticSeverity } from "./enums";
 import { lex } from "./lexer.js";
 import { Diagnostic } from "./utils/diagnostics.js";
 import { meberAccessOperators, end_expression } from "./utils/constants.js";
-import { _parseMemberAccess } from "./parsers/member-access";
-import { next_and_skip_shit_or_fail } from "./utils/advancers";
-import { parse_body } from "./parsers/body-parser";
-import { ParseMeta, __cache, main_parse, Node, promises, _parse, ParameterNode, ClassNode, diagnostics, parse_expression, __parse, AccessChainItem } from "./parser";
-import { __external_var_creator } from "./parsers/__external_var";
+import { _parseMemberAccess } from "./parsers/member-access.js";
+import { next_and_skip_shit_or_fail } from "./utils/advancers.js";
+import { parse_body } from "./parsers/body-parser.js";
+import { ParseMeta, __cache, main_parse, Node, promises, _parse, ParameterNode, ClassNode, diagnostics, parse_expression, __parse, AccessChainItem } from "./parser.js";
+import { __external_var_creator } from "./parsers/__external_var.js";
 
 export var keywordsHandlers = {
     /**
