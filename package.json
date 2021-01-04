@@ -25,7 +25,7 @@
     "build": "tsc && rollup build/out/lib/compiler.js -f iife -n \"compile\" --exports named --file build/bundle.js && babel build/bundle.js --out-file build/bundle.min.js",
     "update": "npm i @babel/cli@latest @babel/core@latest @types/node@latest babel-preset-minify@latest typescript@next rollup@latest -D",
     "start": "node server.js",
-    "globalinstall": "npm pack && npm install -g ./tsk-0.1.2.tgz",
+    "globalinstall": "npm pack && npm install -g ./tskc-0.1.2.tgz",
     "clearbuild": "rm -rf ./build/out && rm -rf ./build/bundle.js && rm -rf ./build/bundle.min.js"
   },
   "repository": {
@@ -35,5 +35,6 @@
   "bugs": {
     "url": "https://github.com/MadProbe/tsk/issues"
   },
-  "homepage": "https://github.com/MadProbe/tsk#readme"
+  "homepage": "https://github.com/MadProbe/tsk#readme",
+  "dependencies": {}
 }
