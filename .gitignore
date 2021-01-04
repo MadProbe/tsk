@@ -1,6 +1,6 @@
 .trash
 .vscode
-build/deps
+build
 index.js
 index.html
 server.js
