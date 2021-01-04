@@ -9,6 +9,6 @@ server.js
 syntax.md
 .babelrc
 package-lock.json
-tsk-*.tgz
+*.tgz
 node_modules
 tsconfig.json
