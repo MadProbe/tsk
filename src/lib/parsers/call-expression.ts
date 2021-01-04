@@ -3,7 +3,8 @@ import { isArray, error_unexcepted_token } from "../utils/util.js";
 import { Nodes, NodeType, Tokens } from "../enums";
 import { end_expression } from "../utils/constants.js";
 import { next_and_skip_shit_or_fail } from "../utils/advancers.js";
-import { ParseMeta, Node, _parse } from "../parser.js";
+import { _parse } from "../parser.js";
+import type { ParseMeta, Node } from "../nodes";
 
 export function parse_call_expression(next: Token, stream: TokenStream, meta: ParseMeta) {
     var arg: Node | [Node], args = [] as Node[];

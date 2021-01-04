@@ -3,7 +3,8 @@ import { isArray } from "../utils/util.js";
 import { Tokens, DiagnosticSeverity } from "../enums";
 import { Diagnostic } from "../utils/diagnostics.js";
 import { next_and_skip_shit_or_fail } from "../utils/advancers.js";
-import { ParseMeta, Node, _parse, diagnostics } from "../parser.js";
+import { _parse, diagnostics } from "../parser.js";
+import type { ParseMeta, Node } from "../nodes";
 
 /**
  * @param {import("./utils/stream.js").TokenStream} stream

@@ -57,6 +57,23 @@ export * from "./parser.js";
 export * from "./wrapper.js";
 export * from "./emitter.js";
 export type {
+    AccessChainItem,
+    ClassNode,
+    ClassConstructor,
+    ClassNodeProps,
+    ClassProperty,
+    ClassGetter,
+    ClassSetter,
+    ClassMethod,
+    Node,
+    NodeBase,
+    NodeName,
+    TryStatmentNode,
+    UsingStatmentNode,
+    MixinNode,
+    ParameterNode
+} from "./nodes";
+export type {
     AccessChainItemKind,
     Scopes,
     DiagnosticSeverity,
@@ -65,7 +82,7 @@ export type {
     Nodes,
     Tokens,
     FNNodeType
-} from "./enums.js";
+} from "./enums";
 
 // declare const __時崎狂三__: typeof globalThis;
 // var getGlobal = () => {

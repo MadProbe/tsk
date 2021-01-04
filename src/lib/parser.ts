@@ -17,7 +17,7 @@ import {
     isNode,
     abruptify
 } from "./utils/util.js";
-import { Nodes, ParameterNodeType, NodeType, AccessChainItemKind, Tokens, DiagnosticSeverity } from "./enums";
+import { Nodes, ParameterNodeType, NodeType, Tokens, DiagnosticSeverity } from "./enums";
 import { _emit } from "./emitter.js";
 import { AssignmentOperatorTable } from "./utils/table.js";
 import { Diagnostic, IDiagnostic } from "./utils/diagnostics.js";
@@ -29,76 +29,9 @@ import { parse_body } from "./parsers/body-parser.js";
 import { parse_common_expressions } from "./parsers/common-expressions.js";
 import { parse_assignment } from "./parsers/assignments.js";
 import { keywordsHandlers } from "./keywords.js";
+import type { Node, ParseMeta, AccessChainItem } from "./nodes";
 
 
-export type NodeName = Nodes;
-export interface Node {
-    name: NodeName;
-    type: NodeType;
-    body?: string | Node[] | AccessChainItem[];
-    outerBody?: Node;
-    params?: ParameterNode[];
-    symbolName?: string;
-    meta?: Record<string, unknown>;
-    args?: Node[];
-    locals?: string[];
-    nonlocals?: string[];
-    else?: Node;
-    elseif?: Node;
-}
-export interface ClassProperty {
-    name: Node;
-    body: Node;
-}
-// @ts-ignore
-export interface ClassMethod extends ClassProperty {
-    body: Node[];
-    decorators: Node[];
-    params: ParameterNode[];
-}
-export interface ClassGetter extends ClassMethod {
-    params: [];
-}
-export interface ClassSetter extends ClassMethod {
-    params: [] | [ParameterNode & { type: ParameterNodeType.Normal; }];
-}
-export interface ClassConstructor {
-    body: Node[];
-    params: ParameterNode[];
-}
-export interface ClassNodeProperty extends ClassProperty {
-    body: Node;
-}
-export interface ClassNodeProps {
-    methods: ClassMethod[];
-    getters: ClassGetter[];
-    settets: ClassSetter[];
-    props: [Node, Node][];
-}
-export interface ClassNode extends Node, Privatify<ClassNodeProps> {
-    construct?: ClassConstructor;
-    extends?: Node;
-    mixins: Node[];
-}
-export interface MixinNode extends ClassNode { }
-export type PrivatifyString<T extends string> = T | `private${ Capitalize<T> }`;
-export type Privatify<T extends object> = { [Key in keyof T as PrivatifyString<Key extends string ? Key : never>]: T[Key]; };
-export interface ParseMeta {
-    insideExpression?: boolean;
-    outer: Node;
-    filename: string;
-    [key: string]: unknown;
-}
-export interface ParameterNode {
-    name: string | Node;
-    type: ParameterNodeType;
-    default?: Node;
-    _meta?: any;
-}
-export interface AccessChainItem {
-    kind: AccessChainItemKind;
-    body: Node;
-}
 export type SyntaxTree = Node[];
 // /**
 //  * @param {string} included
@@ -109,9 +42,6 @@ export type SyntaxTree = Node[];
 // function __include_helper__(included: string, pretty: boolean, whitespace: string) {
 //     return _emit(parse(lex(included), filename), { url: filename });
 // }
-export interface KeywordParsers {
-    [name: string]: (stream: TokenStream, filename: string) => Node;
-}
 /**
  * @param {import("./utils/stream.js").Token | import("./parser").Node} next
  * @param {import("./utils/stream.js").TokenStream} stream
@@ -205,14 +135,14 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
 
             case "=>":
                 if (_sym.name !== Nodes.Symbol) {
-                    throw SyntaxError("Arrow functions shortcut cannot contain non-symbol parameter");
+                    diagnostics.push(Diagnostic(DiagnosticSeverity.RuntimeError, "Arrow functions shortcut cannot contain non-symbol parameter"));
                 }
                 node = {
                     name: Nodes.FunctionExpression,
                     type: NodeType.Expression,
                     params: [{ name: _sym.symbolName, type: ParameterNodeType.Normal }],
-                    locals: [] as string[],
-                    nonlocals: [] as string[]
+                    locals: [],
+                    nonlocals: []
                 } as Node;
                 var innerMeta = { outer: node, filename: meta.filename };
                 next = next_and_skip_shit_or_fail(stream, end_expression);
@@ -288,7 +218,7 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
         if (isNode(next)) {
             _sym = next;
         } else if (next[0] === Tokens.Keyword) {
-            _sym = keywordsHandlers[next[1]](stream) as Node; // Only __external_var and this handlers can be invoked here
+            _sym = keywordsHandlers[next[1]](stream) as Node; // Only __external_var and JS auto variable handlers can be invoked here
         } else {
             _sym = {
                 name: Nodes.Symbol,

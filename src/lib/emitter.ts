@@ -1,7 +1,7 @@
 import { AccessChainItemKind, Nodes, NodeType, ParameterNodeType } from "./enums";
-import { AccessChainItem, ClassNode, Node, ParameterNode } from "./parser.js";
 import { occurrences } from "./utils/occurrences.js";
 import { assert, call, includes, randomVarName, undefined } from "./utils/util.js";
+import type { AccessChainItem, ClassNode, Node, ParameterNode } from "./nodes";
 
 
 var __pretty = true;

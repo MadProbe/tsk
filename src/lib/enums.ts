@@ -92,7 +92,8 @@ export const enum Nodes {
     CodeBlock,
     NewExpression,
     ClassExpression,
-    NullAssertionExpression
+    NullAssertionExpression,
+    TryStatment
 }
 export const enum FNNodeType {
     Sync,

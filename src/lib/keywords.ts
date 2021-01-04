@@ -17,15 +17,19 @@ import { meberAccessOperators, end_expression } from "./utils/constants.js";
 import { _parseMemberAccess } from "./parsers/member-access.js";
 import { next_and_skip_shit_or_fail } from "./utils/advancers.js";
 import { parse_body } from "./parsers/body-parser.js";
-import { ParseMeta, __cache, main_parse, Node, promises, _parse, ParameterNode, ClassNode, diagnostics, parse_expression, __parse, AccessChainItem } from "./parser.js";
+import { __cache, main_parse, promises, _parse, diagnostics, parse_expression, __parse } from "./parser.js";
 import { __external_var_creator } from "./parsers/__external_var.js";
+import type { ParseMeta, Node, ParameterNode, ClassNode, AccessChainItem, TryStatmentNode, UsingStatmentNode } from "./nodes";
 
+interface KeywordParsers {
+    [name: string]: (stream: TokenStream, meta: ParseMeta, ...args: any[]) => Node;
+}
 export var keywordsHandlers = {
     /**
      * @param {import("./utils/stream.js").TokenStream} stream
      * @param {import("./parser").ParseMeta} meta
      */
-    nonlocal(stream: import("./utils/stream.js").TokenStream, meta: ParseMeta) {
+    nonlocal(stream, meta) {
         if (!meta.outer.nonlocals) {
             throw "Nonlocal statment: this statment cannot be used in top-level scope!";
         }
@@ -44,7 +48,7 @@ export var keywordsHandlers = {
      * @param {import("./utils/stream.js").TokenStream} stream
      * @param {import("./parser").ParseMeta} meta
      */
-    include(stream: import("./utils/stream.js").TokenStream, meta: ParseMeta) {
+    include(stream, meta) {
         var next = next_and_skip_shit_or_fail(stream, "string");
         if (next[0] !== Tokens.String) {
             error_unexcepted_token(next);
@@ -82,7 +86,7 @@ export var keywordsHandlers = {
      * @param {import("./utils/stream.js").TokenStream} stream
      * @param {import("./parser").ParseMeta} meta
      */
-    if(stream: import("./utils/stream.js").TokenStream, meta: ParseMeta) {
+    if(stream, meta) {
         var next = next_and_skip_shit_or_fail(stream, "(");
         if (next[0] !== Tokens.Special || next[1] !== "(") {
             error_unexcepted_token(next);
@@ -197,7 +201,7 @@ export var keywordsHandlers = {
     /**
      * @param {import("./utils/stream.js").TokenStream} stream
      */
-    interface(stream: import("./utils/stream.js").TokenStream) {
+    interface(stream) {
         var prefix = _echo("Interface statment:");
         var next = next_and_skip_shit_or_fail(stream, "symbol", prefix);
         if (next[0] !== Tokens.Symbol) {
@@ -209,13 +213,13 @@ export var keywordsHandlers = {
         }
         error_unexcepted_token([Tokens.Keyword, "interface"]);
     },
-    import(stream: import("./utils/stream.js").TokenStream) {
+    import(stream) {
         error_unexcepted_token(stream.next);
     },
     /**
      * @param {import("./utils/stream.js").TokenStream} stream
      */
-    async(stream: import("./utils/stream.js").TokenStream, meta: ParseMeta) {
+    async(stream, meta) {
         var next = next_and_skip_shit_or_fail(stream, "fn", "Async(Generator?)Function statment:");
         if (next[0] !== Tokens.Keyword || next[1] !== "fn") {
             error_unexcepted_token(next);
@@ -225,7 +229,7 @@ export var keywordsHandlers = {
     /**
      * @param {import("./utils/stream.js").TokenStream} stream
      */
-    not(stream: import("./utils/stream.js").TokenStream, meta: ParseMeta) {
+    not(stream, meta) {
         return abruptify({
             name: Nodes.LiteralLogicalNotExpression,
             type: NodeType.Expression
@@ -243,7 +247,7 @@ export var keywordsHandlers = {
      * @param {import("./utils/stream.js").TokenStream} stream
      * @param {import("./parser").ParseMeta} meta
      */
-    fn(stream: import("./utils/stream.js").TokenStream, meta: ParseMeta, type: FNNodeType = FNNodeType.Sync) {
+    fn(stream, meta, type: FNNodeType = FNNodeType.Sync) {
         type _1 = "Function statment:";
         type _2 = `Generator${ _1 }`;
         type _3 = `Async${ _1 }`;
@@ -361,7 +365,7 @@ export var keywordsHandlers = {
         node.body = parse_body(stream, innerMeta);
         return node;
     },
-    class(stream: import("./utils/stream.js").TokenStream, meta: ParseMeta) {
+    class(stream, meta) {
         const type = meta.insideExpression ? NodeType.Expression : NodeType.Statment;
         const node = {
             name: Nodes.ClassExpression,
@@ -430,13 +434,13 @@ export var keywordsHandlers = {
             error_unexcepted_token(next);
         return node;
     },
-    return(stream: import("./utils/stream.js").TokenStream, meta: ParseMeta) {
+    return(stream, meta) {
         return abruptify({
             name: Nodes.ReturnStatment,
             type: NodeType.Statment
         }, _parse(next_and_skip_shit_or_fail(stream, end_expression, "Return statment:"), stream, meta));
     },
-    yield(stream: import("./utils/stream.js").TokenStream, meta: ParseMeta) {
+    yield(stream, meta) {
         var next = next_and_skip_shit_or_fail(stream, end_expression, "Yield expression:");
         var yield_from = next[0] === Tokens.Operator && next[1] === "*";
         var expression = yield_from ?
@@ -448,7 +452,7 @@ export var keywordsHandlers = {
             outerBody: meta.outer
         }, expression);
     },
-    await(stream: import("./utils/stream.js").TokenStream, meta: ParseMeta) {
+    await(stream, meta) {
         if (meta.outer.name === Nodes.FunctionExpression) {
             diagnostics.push(Diagnostic(DiagnosticSeverity.RuntimeError,
                 `Using await inside Sync Function Expression will fail at runtime`));
@@ -496,7 +500,7 @@ export var keywordsHandlers = {
             symbolName: "this"
         };
     },
-    keep(stream: TokenStream, meta: ParseMeta) {
+    keep(stream, meta) {
         var prefix = _echo("Keep statment:");
         var next = next_and_skip_shit_or_fail(stream, "(", prefix);
         var args = [] as Node[];
@@ -591,7 +595,11 @@ export var keywordsHandlers = {
         return is_array ? [node] : node;
     },
     // TODO
-    try() {
+    try(stream, meta) {
+        var node = {
+            name: Nodes.TryStatment,
+
+        } as TryStatmentNode | UsingStatmentNode;
         return undefined!;
     }
-} as { [key: string]: (...args: any[]) => Readonly<Node> | [Readonly<Node>]; };
+} as KeywordParsers as { [key: string]: (...args: any[]) => Readonly<Node> | [Readonly<Node>]; };
