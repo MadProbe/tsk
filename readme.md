@@ -16,9 +16,10 @@ TSK Complier transplies tsk code into valid JavaScript code and is written in Ty
 Build project using `npm run build`.
 
 ## Usage
-> `tskc --main=path/to/file --out=path/to/out/dir`
+> `tskc --main=path/to/file --out=path/to/out/dir --pretty`
 * main - main file to start compilation from (can be passed multiple times if you need to compile several files at one time)
 * out - dir where output code is stored
+* pretty - If output must be prettified
 
 ## Contacts
 [Discord](https://discord.gg/5dPuBvZjjx)
