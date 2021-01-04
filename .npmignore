@@ -1,6 +1,7 @@
 src
 .trash
 .vscode
+build/tsconfig.tsbuildinfo
 build/deps
 build/bundle.*
 build/out/lib/utils/valid-chars.*
