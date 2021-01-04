@@ -1,3 +1,8 @@
+import { js_auto_variables } from "./constants.js";
+import type { Token } from "./stream";
+import type { Node } from "../parser";
+import { Nodes, Tokens } from "../enums";
+
 export type CallFunctionType = <T extends (...args: any[]) => void>(func: T, thisArg: ThisParameterType<T> | undefined, ...args: Parameters<T>) => ReturnType<T>;
 export type ApplyFunctionType = <T extends (...args: any[]) => void>(func: T, thisArg: ThisParameterType<T> | undefined, args: Parameters<T> | IArguments) => ReturnType<T>;
 export type BindFunctionType = <T extends (...args: any[]) => void>(func: T, thisArg: ThisParameterType<T> | undefined, ...args: Parameters<T> | undefined[]) => T;
@@ -8,18 +13,12 @@ export var apply = bind(__call, nullish.apply as any) as ApplyFunctionType;
 type ArrayValueType<T extends any[] | readonly any[]> = {
     [key in Exclude<keyof T, keyof []>]: T[key];
 } extends { [key: string]: infer V } ? V : never;
-export function includes<A extends any[] | readonly any[]>(array: A, value: unknown): 
-    value is any[] extends A ? boolean : ArrayValueType<A> {
-    return ~array.indexOf(value) as unknown as boolean;
+export function includes<A extends any[] | readonly any[] | string>(array: A, value: unknown): 
+    value is A extends string ? string : any[] extends A ? boolean : ArrayValueType<Exclude<A, string>> {
+    return ~array.indexOf(value as any) as unknown as boolean;
 }
 export function nullish(arg: unknown): arg is null | undefined {
     return arg === void 0 || arg === null;
-}
-/**
- * Another trick related to compression by babel
- */
-export function _echo<T>(value: T): T {
-    return value;
 }
 export var undefined: undefined;
 var __counter__ = 0;
@@ -92,6 +91,36 @@ export function include(path: URL, cache = true): string | Promise<string> {
 }
 export function inspectLog(shit: any) {
     console.log(typeof require === "function" ? require("util").inspect(shit, !0, 1 / 0, !0) : shit);
+}
+export function isSymbol(next: Token) {
+    return next[0] === Tokens.Symbol || next[0] === Tokens.Keyword && includes(js_auto_variables, next[1]);
+}
+
+export function remove_trailing_undefined(values: Node[]) {
+    for (var index = values.length; index && values[--index].name === Nodes.UndefinedValue;) values.pop();
+}
+
+export function error_unexcepted_token(next: Token, rest = ""): never {
+    throw SyntaxError(`Unexcepted token '${ next[1] }'${ rest }`);
+}
+export function isNode(value: any): value is Node {
+    return !isArray(value) && typeof value === "object" && !nullish(value);
+}
+/**
+ * Checks if expression is an abrupt node ([Node]) and 
+ * returns abrupt node with body with abrupted expression
+ * else returns node with body equal to passed expression
+ */
+export function abruptify(node: Node | [Node], expression: Node | [Node]): Node | [Node] {
+    if (isArray(expression)) {
+        assert<Node>(node);
+        node.body = expression;
+        node = [node];
+    } else {
+        assert<Node>(node);
+        node.body = [expression];
+    }
+    return node;
 }
 var _SyntaxError = SyntaxError;
 export { _SyntaxError as SyntaxError };

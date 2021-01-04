@@ -1,7 +1,7 @@
 import { Stream, TextStream, Token, TokenList } from "./utils/stream.js";
-import { nullish } from "./utils/util.js";
+import { includes, nullish } from "./utils/util.js";
 import { Tokens } from "./enums";
-import { keywords, validChars } from "./utils/indentifier-stuff.js";
+import { keywords, validChars, $2charoperators, $3charoperators } from "./utils/constants.js";
 
 var numberChar = /[0-9.\-\+]/;
 var numberTest = /^(?:[\-\+]?[0-9][_0-9]*)?(?:\.(\.[\-\+]?)?[0-9_]+)?$/m;
@@ -11,8 +11,6 @@ var regexTest = /^`$/m;
 var stringTest = /^'|"$/m;
 var regexModTest = /^[gmiyus]$/m;
 var whitespaceTest = /\s/;
-var $2charoperators = ["&&", "**", "||", "??", "==", "!=", "=>", "<=", ">=", "..", "+=", "/=", "&=", "-=", "++", "--", "*=", "|=", "//", ">>", "<<", "?.", "%=", "^=", "|>", "@@", "/*", "::", "!.", "!["];
-var $3charoperators = ["?.[", "?.(", "??=", "||=", "&&=", "**=", ">>>", "...", ">>=", "<<=", "===", "!=="];
 var symbolic = /^[^\s<>\/*+\-?|&\^!%\.@:=\[\]~(){};,"'#]$/m;
 
 // /**
@@ -148,10 +146,10 @@ function _lex(tokens: TokenList, char: string, iter: TextStream) {
         joined = char + _char;
         if ((char === "-" || char === "+") && /^[\d\.]$/m.test(_char)) {
             _lex(tokens, joined, iter);
-        } else if (~$2charoperators.indexOf(joined)) {
+        } else if (includes($2charoperators, joined)) {
             __char = iter.move();
             _joined = joined + __char;
-            if (~$3charoperators.indexOf(_joined)) {
+            if (includes($3charoperators, _joined)) {
                 ___char = iter.move();
                 __joined = _joined + ___char;
                 if (">>>=" === __joined) {
