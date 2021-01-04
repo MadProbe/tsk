@@ -8,9 +8,10 @@ TSK Complier transplies tsk code into valid JavaScript code and is written in Ty
 2. Download and install [Node](https://nodejs.org/en/download/current/) (Skip if already installed).
 3. Download this git repository using `git clone https://github.com/MadProbe/tsk` command.
 4. Go to downloaded code typically using `cd tsk`.
-5. Install dependencies by running `npm install` (`npm i` also works)
+5. Install dependencies by running `npm install` (`npm i` does same)
 6. Build project using `npm run build`.
 7. To install compiler write `npm run globalinstall`.
+8. Also recommend to install node-fetch as global module by using `npm i -g node-fetch` command, by that allowing fetching web scripts from node.
 
 ## Build
 Build project using `npm run build`.
