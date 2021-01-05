@@ -34,7 +34,7 @@ function skip_whitespace<P extends string>(next: Token, stream: TokenStream, end
     return next[0] === Tokens.Whitespace ? next_or_fail(stream, end, prefix) : next;
 }
 /**
- * shit == whitespace and comments
+ * I used word "shit" because i cannot shortly name comment and whitespace tokens 
  * @param {import("./utils/stream.js").TokenStream} stream
  * @param {string} end
  * @param {string} [prefix]
