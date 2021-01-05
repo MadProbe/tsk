@@ -649,5 +649,8 @@ export var keywordsHandlers = {
         }
         console.log(node);
         return node as unknown as Node;
+    },
+    else() {
+        throw "Else cannot exist as standalone statment";
     }
 } as KeywordParsers as { [key: string]: (...args: any[]) => Readonly<Node> | [Readonly<Node>]; };
