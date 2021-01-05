@@ -8,8 +8,7 @@ import {
     includes,
     error_unexcepted_token,
     abruptify,
-    assert,
-    apply
+    assert
 } from "./utils/util.js";
 import { _echo } from "./utils/_echo.js";
 import { FNNodeType, Nodes, ParameterNodeType, NodeType, AccessChainItemKind, Tokens, DiagnosticSeverity } from "./enums";
@@ -616,8 +615,9 @@ export var keywordsHandlers = {
             node.body = parse_body(stream, meta);
         }
         next = next_and_skip_shit_or_fail(stream, end_expression, prefix);
+        nonuseless = false;
         while (next[0] === Tokens.Keyword && includes(["catch", "else", "finally"] as const, next[1])) {
-            var word = next[1], toAppend = node[word];
+            var word = next[1], toAppend = node[word], nonuseless = true;
             next = next_and_skip_shit_or_fail(stream, end_expression, prefix);
             if (word === "catch" && next[0] === Tokens.Special && next[1] === "(") {
                 next = next_and_skip_shit_or_fail(stream, end_expression, prefix);
@@ -642,6 +642,9 @@ export var keywordsHandlers = {
                 node[word] = parse_body(stream, meta);
             }
             next = next_and_skip_shit_or_fail(stream, end_expression, prefix);
+        }
+        if (!nonuseless) {
+            diagnostics.push(Diagnostic(DiagnosticSeverity.Warn, `Try statment is useless without else, catch, finally clauses!`));
         }
         console.log(node);
         return node as unknown as Node;
