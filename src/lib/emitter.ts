@@ -1,7 +1,7 @@
 import { AccessChainItemKind, Nodes, NodeType, ParameterNodeType } from "./enums";
 import { occurrences } from "./utils/occurrences.js";
 import { assert, call, includes, randomVarName, undefined } from "./utils/util.js";
-import type { AccessChainItem, ClassNode, Node, ParameterNode } from "./nodes";
+import { AccessChainItem, ClassNode, Node, ParameterNode, TryStatmentNode } from "./nodes";
 
 
 var __pretty = true;
@@ -121,15 +121,15 @@ export function _emit(node: Node, meta: any) {
         ([__text, saved] = [saved, __text]);
         return saved;
     }
-    function emit_body() {
-        assert<Node[]>(body);
+    function emit_body(_body?: Node[]) {
+        _body ||= body as Node[];
         index = 0, length = body.length;
         for (var assigned = 0; index < length; index++) {
-            if (body[index].name !== Nodes.Empty) {
+            if (_body[index].name !== Nodes.Empty) {
                 assigned++;
                 is();
-                __text += _emit(body[index], meta);
-                if ((index + 1 < length || __pretty) && !isFunctionNode(body[index])) {
+                __text += _emit(_body[index], meta);
+                if ((index + 1 < length || __pretty) && !isFunctionNode(_body[index])) {
                     __text += ";";
                 }
                 nl();
@@ -744,13 +744,7 @@ export function _emit(node: Node, meta: any) {
             break;
 
         case Nodes.CodeBlock:
-            __text += "{";
-            body.length && nl();
-            ri();
-            emit_body();
-            li();
-            body.length && is();
-            __text += "}";
+            simple_body_emit();
             nl();
             break;
 
@@ -762,6 +756,29 @@ export function _emit(node: Node, meta: any) {
         case Nodes.NewExpression:
             assert<[Node]>(body);
             __text += "new " + _emit(as_expression(body[0]), meta);
+            break;
+
+        case Nodes.TryStatment:
+            assert<TryStatmentNode>(node);
+            assert<Node[]>(body);
+            __text += "try";
+            sp();
+            simple_body_emit();
+            if (node.catch) {
+                sp();
+                __text += "catch";
+                sp();
+                __text += `(${node.catch[0]})`;
+                sp();
+                simple_body_emit(node.catch[1]);
+            }
+            if (node.finally) {
+                sp();
+                __text += "finally";
+                sp();
+                simple_body_emit(node.finally);
+            }
+            nl();
             break;
 
         case undefined: {
@@ -781,6 +798,17 @@ export function _emit(node: Node, meta: any) {
     }
     assert<string>(__text.toString());
     return __text;
+
+    function simple_body_emit(_body?: Node[]) {
+        _body ||= body as Node[];
+        __text += "{";
+        _body.length && nl();
+        ri();
+        emit_body(_body);
+        li();
+        length && is();
+        __text += "}";
+    }
 }
 export interface EmitterOptions {
     pretty?: boolean;
