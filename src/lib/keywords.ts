@@ -639,7 +639,7 @@ export var keywordsHandlers = {
                 assert<Exclude<typeof toAppend, Node[]>>(toAppend);
                 toAppend[1] = parse_body(stream, meta);
             } else {
-                toAppend = parse_body(stream, meta);
+                node[word] = parse_body(stream, meta);
             }
             next = next_and_skip_shit_or_fail(stream, end_expression, prefix);
         }
