@@ -617,8 +617,7 @@ export var keywordsHandlers = {
         }
         next = next_and_skip_shit_or_fail(stream, end_expression, prefix);
         while (next[0] === Tokens.Keyword && includes(["catch", "else", "finally"] as const, next[1])) {
-            var word = next[1],
-                toAppend = [] as UsingStatmentNode["catch" | "else" | "finally"];
+            var word = next[1], toAppend = node[word];
             next = next_and_skip_shit_or_fail(stream, end_expression, prefix);
             if (word === "catch" && next[0] === Tokens.Special && next[1] === "(") {
                 next = next_and_skip_shit_or_fail(stream, end_expression, prefix);
@@ -638,7 +637,6 @@ export var keywordsHandlers = {
             } else {
                 toAppend = parse_body(stream, meta);
             }
-            node[word] = toAppend as any;
             next = next_and_skip_shit_or_fail(stream, end_expression, prefix);
         }
         console.log(node);

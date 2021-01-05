@@ -126,7 +126,7 @@ new leel()._!.s;
 __external("}catch(e){console.error(e)}")
 try {
     0;
-} catch {
+} catch (cought) {
     1;
 } else {
     2;
