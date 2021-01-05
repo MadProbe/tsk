@@ -646,6 +646,7 @@ export var keywordsHandlers = {
         downgrade_next(stream);
         if (!nonuseless) {
             diagnostics.push(Diagnostic(DiagnosticSeverity.Warn, `Try statment is useless without else, catch, finally clauses!`));
+            node.finally = [];
         }
         console.log(node);
         return node as unknown as Node;
