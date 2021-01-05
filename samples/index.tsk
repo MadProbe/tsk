@@ -124,4 +124,13 @@ null!;
 __external("}catch(e){console.error(e)}try{")
 new leel()._!.s;
 __external("}catch(e){console.error(e)}")
+try {
+    0;
+} catch {
+    1;
+} else {
+    2;
+} finally {
+    3;
+};
 //;~;

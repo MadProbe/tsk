@@ -22,7 +22,7 @@ export interface Node extends NodeBase {
 export interface TryStatmentNode extends NodeBase {
     body: Node[];
     else: Node[];
-    catch: Node[];
+    catch: [name: string, value: Node[]];
     finally: Node[];
 }
 export interface UsingStatmentNode extends TryStatmentNode {
