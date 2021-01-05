@@ -83,6 +83,9 @@ export type {
     Tokens,
     FNNodeType
 } from "./enums";
+export type {
+    ArrayValueType
+} from "./utils/util";
 
 // declare const __時崎狂三__: typeof globalThis;
 // var getGlobal = () => {

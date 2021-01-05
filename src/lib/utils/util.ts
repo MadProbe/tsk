@@ -10,7 +10,7 @@ var __call = nullish.call;
 export var bind = __call.bind(nullish.bind) as BindFunctionType;
 export var call = bind(__call, __call as any) as CallFunctionType;
 export var apply = bind(__call, nullish.apply as any) as ApplyFunctionType;
-type ArrayValueType<T extends any[] | readonly any[]> = {
+export type ArrayValueType<T extends any[] | readonly any[]> = {
     [key in Exclude<keyof T, keyof []>]: T[key];
 } extends { [key: string]: infer V } ? V : never;
 export function includes<A extends any[] | readonly any[] | string>(array: A, value: unknown): 
