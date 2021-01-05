@@ -3,7 +3,7 @@ import { Nodes, NodeType, AccessChainItemKind, DiagnosticSeverity } from "../enu
 import { AssignmentOperatorTable, AssignmentOperatorTableKeys } from "../utils/table.js";
 import { Diagnostic } from "../utils/diagnostics.js";
 import { end_expression } from "../utils/constants.js";
-import { next_and_skip_shit_or_fail } from "../utils/advancers.js";
+import { advance_next } from "../utils/advancers.js";
 import { diagnostics, _parse } from "../parser.js";
 import type { Node, ParseMeta, AccessChainItem } from "../nodes";
 
@@ -21,7 +21,7 @@ export function parse_assignment(_sym: Node, next: Token, stream: TokenStream, m
                 }
             }
         }
-        parsed = _parse(next_and_skip_shit_or_fail(stream, end_expression), stream, meta) as Node;
+        parsed = _parse(advance_next(stream, end_expression), stream, meta) as Node;
         node = {
             name,
             type: NodeType.Expression,

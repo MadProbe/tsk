@@ -2,7 +2,7 @@ import { Token, TokenStream } from "../utils/stream.js";
 import { isArray } from "../utils/util.js";
 import { Tokens, DiagnosticSeverity } from "../enums";
 import { Diagnostic } from "../utils/diagnostics.js";
-import { next_and_skip_shit_or_fail } from "../utils/advancers.js";
+import { advance_next } from "../utils/advancers.js";
 import { _parse, diagnostics } from "../parser.js";
 import type { ParseMeta, Node } from "../nodes";
 
@@ -11,7 +11,7 @@ import type { ParseMeta, Node } from "../nodes";
  * @param {import("./parser").ParseMeta} meta
  */
 export function parse_body(stream: TokenStream, meta: ParseMeta): Node[] {
-    var next: Token = next_and_skip_shit_or_fail(stream, "}"), tokens = [] as Node[];
+    var next: Token = advance_next(stream, "}"), tokens = [] as Node[];
     //console.log(1123124);
     while ((next /*, console.log("next:", next), next*/)[0] !== Tokens.Special || next[1] !== "}") {
         // console.log(next);
@@ -25,7 +25,7 @@ export function parse_body(stream: TokenStream, meta: ParseMeta): Node[] {
                 }
             } else {
                 _parsed && tokens.push(_parsed);
-                next = next_and_skip_shit_or_fail(stream, "}");
+                next = advance_next(stream, "}");
             }
         } catch (_e) {
             if (_e === 1) {
@@ -34,7 +34,7 @@ export function parse_body(stream: TokenStream, meta: ParseMeta): Node[] {
                 break;
             } else {
                 diagnostics.push(Diagnostic(DiagnosticSeverity.Error, String(_e)));
-                next = next_and_skip_shit_or_fail(stream, "}");
+                next = advance_next(stream, "}");
             }
         }
     }

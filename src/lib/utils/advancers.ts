@@ -34,13 +34,12 @@ function skip_whitespace<P extends string>(next: Token, stream: TokenStream, end
     return next[0] === Tokens.Whitespace ? next_or_fail(stream, end, prefix) : next;
 }
 /**
- * I used word "shit" because i cannot shortly name comment and whitespace tokens 
  * @param {import("./utils/stream.js").TokenStream} stream
  * @param {string} end
  * @param {string} [prefix]
  */
 
-export function next_and_skip_shit_or_fail<P extends string>(stream: TokenStream, end: string, prefix?: Prefix<P>) {
+export function advance_next<P extends string>(stream: TokenStream, end: string, prefix?: Prefix<P>) {
     var _temp: Token;
     while ((_temp = skip_whitespace(next_or_fail(stream, end, prefix), stream, end, prefix))[0] === Tokens.MultilineComment || _temp[0] === Tokens.Comment) {
         var _exec = /\s*internal\:\s*(.+)/.exec(_temp[1]);

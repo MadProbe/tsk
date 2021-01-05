@@ -3,7 +3,7 @@ import { isArray, includes, error_unexcepted_token } from "../utils/util.js";
 import { Nodes, NodeType, AccessChainItemKind, Tokens } from "../enums";
 import { meberAccessOperators, end_expression } from "../utils/constants.js";
 import { __parse, __used, _parse } from "../parser.js";
-import { next_and_skip_shit_or_fail, downgrade_next } from "../utils/advancers.js";
+import { advance_next, downgrade_next } from "../utils/advancers.js";
 import type { Node, ParseMeta, AccessChainItem } from "../nodes";
 
 export function _parseMemberAccess(sym: Node, next: Token, stream: TokenStream, meta: ParseMeta) {
@@ -13,7 +13,7 @@ export function _parseMemberAccess(sym: Node, next: Token, stream: TokenStream, 
     }] as AccessChainItem[];
     while (next[0] === Tokens.Operator && includes(meberAccessOperators, next[1])) {
         if (next[1] === ".") {
-            next = next_and_skip_shit_or_fail(stream, "symbol");
+            next = advance_next(stream, "symbol");
             if (next[0] !== Tokens.Symbol && next[0] !== Tokens.Keyword) {
                 error_unexcepted_token(next);
             }
@@ -22,12 +22,12 @@ export function _parseMemberAccess(sym: Node, next: Token, stream: TokenStream, 
                 body: { name: Nodes.SymbolNoPrefix, type: NodeType.Expression, symbolName: next[1] }
             });
         } else if (next[1] === "[") {
-            var parsed = __parse(next_and_skip_shit_or_fail(stream, end_expression), stream, meta);
+            var parsed = __parse(advance_next(stream, end_expression), stream, meta);
             if (isArray(parsed)) {
                 next = stream.next;
                 parsed = parsed[0];
             } else {
-                next = next_and_skip_shit_or_fail(stream, "]");
+                next = advance_next(stream, "]");
             }
             if (next[0] !== Tokens.Operator || next[1] !== "]") {
                 error_unexcepted_token(next);
@@ -37,7 +37,7 @@ export function _parseMemberAccess(sym: Node, next: Token, stream: TokenStream, 
                 body: parsed
             });
         } else if (next[1] === "?.") {
-            next = next_and_skip_shit_or_fail(stream, "symbol");
+            next = advance_next(stream, "symbol");
             if (next[0] !== Tokens.Symbol && next[0] !== Tokens.Keyword) {
                 error_unexcepted_token(next);
             }
@@ -46,12 +46,12 @@ export function _parseMemberAccess(sym: Node, next: Token, stream: TokenStream, 
                 body: { name: Nodes.SymbolNoPrefix, type: NodeType.Expression, symbolName: next[1] }
             });
         } else if (next[1] === "?.[") {
-            var parsed = __parse(next_and_skip_shit_or_fail(stream, end_expression), stream, meta);
+            var parsed = __parse(advance_next(stream, end_expression), stream, meta);
             if (isArray(parsed)) {
                 next = stream.next;
                 parsed = parsed[0];
             } else {
-                next = next_and_skip_shit_or_fail(stream, "]");
+                next = advance_next(stream, "]");
             }
             if (next[0] !== Tokens.Operator || next[1] !== "]") {
                 error_unexcepted_token(next);
@@ -61,7 +61,7 @@ export function _parseMemberAccess(sym: Node, next: Token, stream: TokenStream, 
                 body: parsed
             });
         } else if (next[1] === "!.") {
-            next = next_and_skip_shit_or_fail(stream, "symbol");
+            next = advance_next(stream, "symbol");
             if (next[0] !== Tokens.Symbol && next[0] !== Tokens.Keyword) {
                 error_unexcepted_token(next);
             }
@@ -71,12 +71,12 @@ export function _parseMemberAccess(sym: Node, next: Token, stream: TokenStream, 
                 body: { name: Nodes.SymbolNoPrefix, type: NodeType.Expression, symbolName: next[1] }
             });
         } else if (next[1] === "![") {
-            var parsed = __parse(next_and_skip_shit_or_fail(stream, end_expression), stream, meta);
+            var parsed = __parse(advance_next(stream, end_expression), stream, meta);
             if (isArray(parsed)) {
                 next = stream.next;
                 parsed = parsed[0];
             } else {
-                next = next_and_skip_shit_or_fail(stream, "]");
+                next = advance_next(stream, "]");
             }
             if (next[0] !== Tokens.Operator || next[1] !== "]") {
                 error_unexcepted_token(next);
@@ -89,7 +89,7 @@ export function _parseMemberAccess(sym: Node, next: Token, stream: TokenStream, 
         } else {
             break;
         }
-        next = next_and_skip_shit_or_fail(stream, "any");
+        next = advance_next(stream, "any");
     }
     downgrade_next(stream);
     return chain;

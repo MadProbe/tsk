@@ -23,7 +23,7 @@ import { AssignmentOperatorTable } from "./utils/table.js";
 import { Diagnostic, IDiagnostic } from "./utils/diagnostics.js";
 import { js_auto_variables, end_expression } from "./utils/constants.js";
 import { parseMemberAccess } from "./parsers/member-access.js";
-import { next_and_skip_shit_or_fail } from "./utils/advancers.js";
+import { advance_next } from "./utils/advancers.js";
 import { parse_call_expression } from "./parsers/call-expression.js";
 import { parse_body } from "./parsers/body-parser.js";
 import { parse_common_expressions } from "./parsers/common-expressions.js";
@@ -76,7 +76,7 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
             type: NodeType.Expression,
             body: _temp
         };
-        next = next_and_skip_shit_or_fail(stream, end_expression, "Number expression:");
+        next = advance_next(stream, end_expression, "Number expression:");
         if (next[0] !== Tokens.Operator && next[0] !== Tokens.Special) {
             error_unexcepted_token(next);
         }
@@ -95,7 +95,7 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
                 // console.log("():", next);
                 diagnostics.push(Diagnostic(DiagnosticSeverity.RuntimeError,
                     "Call on number will fail at runtime because number is not callable."));
-                var args = parse_call_expression(next_and_skip_shit_or_fail(stream, ")", "Call expression:"), stream, meta);
+                var args = parse_call_expression(advance_next(stream, ")", "Call expression:"), stream, meta);
                 remove_trailing_undefined(args);
                 node = {
                     name: next[1] === "(" ? Nodes.CallExpression : Nodes.OptionalCallExpression,
@@ -145,7 +145,7 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
                     nonlocals: []
                 } as Node;
                 var innerMeta = { outer: node, filename: meta.filename };
-                next = next_and_skip_shit_or_fail(stream, end_expression);
+                next = advance_next(stream, end_expression);
                 if (next[0] !== Tokens.Special && next[1] !== "{") {
                     return abruptify(node, abruptify({
                         name: Nodes.ReturnStatment,
@@ -157,11 +157,11 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
 
             case "::":
                 prefix = "Argument binding expression: ";
-                next = next_and_skip_shit_or_fail(stream, "(", prefix);
+                next = advance_next(stream, "(", prefix);
                 if (next[0] !== Tokens.Special || next[1] !== "(") {
                     error_unexcepted_token(next);
                 }
-                next = next_and_skip_shit_or_fail(stream, ")", prefix);
+                next = advance_next(stream, ")", prefix);
                 var args = parse_call_expression(next, stream, meta);
                 return {
                     name: Nodes.ArgumentBindingExpression,
@@ -226,7 +226,7 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
                 symbolName: next[1]
             };
         }
-        next = next_and_skip_shit_or_fail(stream, end_expression);
+        next = advance_next(stream, end_expression);
         if (next[0] === Tokens.Keyword && next[1] === "with") {
             return [_sym];
         }
@@ -258,7 +258,7 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
             case "(":
             case "?.(":
                 // console.log("():", next);
-                var args = parse_call_expression(next_and_skip_shit_or_fail(stream, ")", "Call expression:"), stream, meta);
+                var args = parse_call_expression(advance_next(stream, ")", "Call expression:"), stream, meta);
                 remove_trailing_undefined(args);
                 node = {
                     name: next[1] === "(" ? Nodes.CallExpression : Nodes.OptionalCallExpression,
@@ -288,7 +288,7 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
                     nonlocals: [] as string[]
                 } as Node;
                 var innerMeta = { outer: node, filename: meta.filename };
-                next = next_and_skip_shit_or_fail(stream, end_expression);
+                next = advance_next(stream, end_expression);
                 if (next[0] !== Tokens.Special && next[1] !== "{") {
                     return abruptify(node, abruptify({
                         name: Nodes.ReturnStatment,
@@ -300,11 +300,11 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
 
             case "::":
                 prefix = "Argument binding expression: ";
-                next = next_and_skip_shit_or_fail(stream, "(", prefix);
+                next = advance_next(stream, "(", prefix);
                 if (next[0] !== Tokens.Special || next[1] !== "(") {
                     error_unexcepted_token(next);
                 }
-                next = next_and_skip_shit_or_fail(stream, ")", prefix);
+                next = advance_next(stream, ")", prefix);
                 var args = parse_call_expression(next, stream, meta);
                 return {
                     name: Nodes.ArgumentBindingExpression,
@@ -361,7 +361,7 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
                 var body: any = node.body;
                 assert<Node[]>(body);
                 while (1) {
-                    next = next_and_skip_shit_or_fail(stream, end_expression);
+                    next = advance_next(stream, end_expression);
                     if (next[0] === Tokens.Special && next[1] === ",") {
                         body.push({
                             name: Nodes.UndefinedValue,
@@ -375,7 +375,7 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
                     if (isArray(parsed)) {
                         next = stream.next;
                         parsed = parsed[0];
-                    } else next = next_and_skip_shit_or_fail(stream, ']" or ",');
+                    } else next = advance_next(stream, ']" or ",');
                     if ((next[0] !== Tokens.Special || next[1] !== ",") &&
                         (next[0] !== Tokens.Operator || next[1] !== ']')) {
                         error_unexcepted_token(next);
@@ -406,7 +406,7 @@ function parse_any(stream: TokenStream, meta: ParseMeta) {
  * @param {import("./parser").ParseMeta} meta
  */
 export function parse_expression(stream: import("./utils/stream.js").TokenStream, meta: ParseMeta) {
-    return _parse(next_and_skip_shit_or_fail(stream, end_expression), stream, meta);
+    return _parse(advance_next(stream, end_expression), stream, meta);
 }
 // var __line = 0;
 // var __column = 0;
