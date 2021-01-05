@@ -627,6 +627,10 @@ export var keywordsHandlers = {
                 assert<Exclude<typeof toAppend, Node[]>>(toAppend);
                 toAppend[0] = next[1];
                 next = next_and_skip_shit_or_fail(stream, end_expression, prefix);
+                if (next[0] !== Tokens.Special || next[1] !== ")") {
+                    error_unexcepted_token(next);
+                }
+                next = next_and_skip_shit_or_fail(stream, end_expression, prefix);
             }
             if (next[0] !== Tokens.Special || next[1] !== "{") {
                 error_unexcepted_token(next);
@@ -640,6 +644,6 @@ export var keywordsHandlers = {
             next = next_and_skip_shit_or_fail(stream, end_expression, prefix);
         }
         console.log(node);
-        return node as any as Node;
+        return node as unknown as Node;
     }
 } as KeywordParsers as { [key: string]: (...args: any[]) => Readonly<Node> | [Readonly<Node>]; };
