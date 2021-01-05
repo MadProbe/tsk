@@ -16,7 +16,7 @@ import { lex } from "./lexer.js";
 import { Diagnostic } from "./utils/diagnostics.js";
 import { meberAccessOperators, end_expression } from "./utils/constants.js";
 import { _parseMemberAccess } from "./parsers/member-access.js";
-import { next_and_skip_shit_or_fail } from "./utils/advancers.js";
+import { downgrade_next, next_and_skip_shit_or_fail } from "./utils/advancers.js";
 import { parse_body } from "./parsers/body-parser.js";
 import { __cache, main_parse, promises, _parse, diagnostics, parse_expression, __parse } from "./parser.js";
 import { __external_var_creator } from "./parsers/__external_var.js";
@@ -643,6 +643,7 @@ export var keywordsHandlers = {
             }
             next = next_and_skip_shit_or_fail(stream, end_expression, prefix);
         }
+        downgrade_next(stream);
         if (!nonuseless) {
             diagnostics.push(Diagnostic(DiagnosticSeverity.Warn, `Try statment is useless without else, catch, finally clauses!`));
         }

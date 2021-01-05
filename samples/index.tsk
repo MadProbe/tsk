@@ -133,13 +133,9 @@ try {
 } finally {
     3;
 }
-try {
-
-} finally {
-
-}
-try {} else {}
-try {} catch {}
-try {} 
+try { } finally { }
+try { } else { }
+try { } catch { }
+try { }
 //;~;
 ;
