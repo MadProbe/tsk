@@ -600,12 +600,12 @@ export var keywordsHandlers = {
         var node = {
             name: Nodes.TryStatment,
             type: NodeType.Statment,
-            catch: ["_", []],
-            else: [],
-            body: [],
-            finally: [],
-            args: []
-        } as UsingStatmentNode,
+            catch: undefined,
+            else: undefined,
+            body: undefined,
+            finally: undefined,
+            args: undefined
+        } as Partial<UsingStatmentNode>,
             prefix = _echo("Try statment:" as const),
             next = advance_next(stream, end_expression, prefix);
         if (next[0] === Tokens.Keyword && next[1] === "using") {
@@ -617,7 +617,7 @@ export var keywordsHandlers = {
         next = advance_next(stream, end_expression, prefix);
         nonuseless = false;
         while (next[0] === Tokens.Keyword && includes(["catch", "else", "finally"] as const, next[1])) {
-            var word = next[1], toAppend = node[word], nonuseless = true;
+            var word = next[1], toAppend = word === "catch" ? ["_", []] as UsingStatmentNode["catch"] : undefined, nonuseless = true;
             next = advance_next(stream, end_expression, prefix);
             if (word === "catch" && next[0] === Tokens.Special && next[1] === "(") {
                 next = advance_next(stream, end_expression, prefix);
@@ -625,7 +625,7 @@ export var keywordsHandlers = {
                     error_unexcepted_token(next);
                 }
                 assert<Exclude<typeof toAppend, Node[]>>(toAppend);
-                toAppend[0] = next[1];
+                toAppend![0] = next[1];
                 next = advance_next(stream, end_expression, prefix);
                 if (next[0] !== Tokens.Special || next[1] !== ")") {
                     error_unexcepted_token(next);
@@ -637,7 +637,7 @@ export var keywordsHandlers = {
             }
             if (word === "catch") {
                 assert<Exclude<typeof toAppend, Node[]>>(toAppend);
-                toAppend[1] = parse_body(stream, meta);
+                toAppend![1] = parse_body(stream, meta);
             } else {
                 node[word] = parse_body(stream, meta);
             }
