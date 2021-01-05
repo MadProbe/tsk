@@ -16,7 +16,7 @@ var __contains = `function __contains(i,v){` + // i = iterable, v = value
     `for(var _=i[Symbol.iterator](),n=__bind(_.next,_),t;!(t=n()).done;)if((t=t.value)===v||v!==v&&j!==t)return!0;` +
     `return!1}`;
 
-export function wrap(code: string, used: any) {
+export function wrap(code: string, used: Record<string, boolean>) {
     return `(function(){var _=function(){},p=Promise,c=_.call,__bind=c.bind(_.bind),` +
         `pr=__bind(p.resolve,p),__call=__bind(c,c),__apply=__bind(c,_.apply);` +
         `${ __nullish };${ __async };${ used.contains ? `${ __contains };` : "" }${ used.na ? `${ __null_assert };` : ""}` +

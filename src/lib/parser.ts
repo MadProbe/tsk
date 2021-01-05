@@ -417,7 +417,7 @@ export var promises = [] as Promise<Node[]>[];
 export interface ParserOutput {
     output: Node;
     diagnostics: IDiagnostic[];
-    __used: any;
+    __used: Record<string, boolean>;
 }
 export var __cache = true;
 export var __used: any;
