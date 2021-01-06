@@ -793,7 +793,7 @@ export function _emit(node: Node, meta: any) {
                 sp();
                 __text += "catch";
                 sp();
-                __text += `(${ node.catch[0] ? `$${node.catch[0]}` : "_" })`;
+                __text += `(${ node.catch[0] ? `$${ node.catch[0] }` : "_" })`;
                 sp();
                 simple_body_emit(node.catch[1]);
             }
@@ -807,8 +807,16 @@ export function _emit(node: Node, meta: any) {
                     type: NodeType.Statment,
                     body: node.else,
                     finally: node.finally || []
-                } as TryStatmentNode | { else?: Node[], catch?: TryStatmentNode["catch"] } as unknown as Node] : node.finally);
+                } as TryStatmentNode | { else?: Node[], catch?: TryStatmentNode["catch"]; } as unknown as Node] : node.finally);
             }
+            break;
+
+        case Nodes.WhileStatment:
+            __text += "while";
+            sp();
+            __text += `(${ _emit(node.args![0], meta) })`;
+            sp();
+            simple_body_emit();
             break;
 
         case undefined: {
