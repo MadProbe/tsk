@@ -756,7 +756,6 @@ export function _emit(node: Node, meta: any) {
 
         case Nodes.CodeBlock:
             simple_body_emit();
-            nl();
             break;
 
         case Nodes.NullAssertionExpression:
@@ -810,7 +809,6 @@ export function _emit(node: Node, meta: any) {
                     finally: node.finally || []
                 } as TryStatmentNode | { else?: Node[], catch?: TryStatmentNode["catch"] } as unknown as Node] : node.finally);
             }
-            nl();
             break;
 
         case undefined: {
