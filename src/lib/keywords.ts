@@ -678,5 +678,38 @@ export var keywordsHandlers = {
             body: parse_body(stream, meta),
             args: arg
         };
+    },
+    do(stream, meta) {
+        var prefix = _echo("Do-While statment:" as const);
+        var next = advance_next(stream, "{", prefix);
+        var body, arg;
+        if (next[0] !== Tokens.Special || next[1] !== "{") {
+            error_unexcepted_token(next);
+        }
+        body = parse_body(stream, meta);
+        next = advance_next(stream, "while", prefix);
+        if (next[0] !== Tokens.Keyword || next[1] !== "while") {
+            error_unexcepted_token(next);
+        }
+        next = advance_next(stream, "(", prefix);
+        if (next[0] !== Tokens.Special || next[1] !== "(") {
+            error_unexcepted_token(next);
+        }
+        arg = _parse(next = advance_next(stream, end_expression, prefix), stream, meta);
+        if (isArray(arg)) {
+            next = stream.next;
+        } else {
+            arg = [arg];
+            next = advance_next(stream, ")", prefix);
+        }
+        if (next[0] !== Tokens.Special || next[1] !== ")") {
+            error_unexcepted_token(next);
+        }
+        return {
+            name: Nodes.DoWhileStatment,
+            type: NodeType.Statment,
+            body,
+            args: arg
+        };
     }
 } as KeywordParsers as { [key: string]: (...args: any[]) => Readonly<Node> | [Readonly<Node>]; };
