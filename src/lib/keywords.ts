@@ -616,7 +616,7 @@ export var keywordsHandlers = {
         next = advance_next(stream, end_expression, prefix);
         nonuseless = false;
         while (next[0] === Tokens.Keyword && includes(["catch", "else", "finally"] as const, next[1])) {
-            var word = next[1], toAppend = word === "catch" ? ["_", []] as UsingStatmentNode["catch"] : undefined, nonuseless = true;
+            var word = next[1], toAppend = word === "catch" ? ["", []] as UsingStatmentNode["catch"] : undefined, nonuseless = true;
             next = advance_next(stream, end_expression, prefix);
             if (word === "catch" && next[0] === Tokens.Special && next[1] === "(") {
                 next = advance_next(stream, end_expression, prefix);

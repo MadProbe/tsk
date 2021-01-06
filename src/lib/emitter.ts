@@ -768,7 +768,7 @@ export function _emit(node: Node, meta: any) {
                 sp();
                 __text += "catch";
                 sp();
-                __text += `(${node.catch[0]})`;
+                __text += `(${ node.catch[0] ? `$${node.catch[0]}` : "_" })`;
                 sp();
                 simple_body_emit(node.catch[1]);
             }
