@@ -103,11 +103,12 @@ export function _emit(node: Node, meta: any) {
     function ri() {
         meta.sp += "    ";
     }
-    function declare(name: string) {
+    function declare<T extends string>(name: T): T {
         (__top.params ||= []).push({
             name,
             type: ParameterNodeType.NoPrefix
         });
+        return name;
     }
     function pre_emit_body() {
         var saved = __text, is_async = node_name === Nodes.AsyncFunctionExpression ||
@@ -123,7 +124,7 @@ export function _emit(node: Node, meta: any) {
     }
     function emit_body(_body?: Node[]) {
         _body ||= body as Node[];
-        index = 0, length = body.length;
+        index = 0, length = _body.length;
         for (var assigned = 0; index < length; index++) {
             if (_body[index].name !== Nodes.Empty) {
                 assigned++;
@@ -205,6 +206,16 @@ export function _emit(node: Node, meta: any) {
             __text += -(length - index);
         }
         __text += ")[0]";
+    }
+    function simple_body_emit(_body?: Node[]) {
+        _body ||= body as Node[];
+        __text += "{";
+        _body.length && nl();
+        ri();
+        emit_body(_body);
+        li();
+        length && is();
+        __text += "}";
     }
     meta ??= {};
     meta.sp ??= "";
@@ -763,7 +774,22 @@ export function _emit(node: Node, meta: any) {
             assert<Node[]>(body);
             __text += "try";
             sp();
-            simple_body_emit();
+            namae = node.else ? declare(randomVarName()) : "";
+            simple_body_emit(namae ? [{
+                name: Nodes.AssignmentExpression,
+                type: NodeType.Expression,
+                body: [
+                    { name: Nodes.SymbolNoPrefix, type: NodeType.Expression, symbolName: namae },
+                    { name: Nodes.FalseValue, type: NodeType.Expression }
+                ]
+            } as Node].concat(body || [], {
+                name: Nodes.AssignmentExpression,
+                type: NodeType.Expression,
+                body: [
+                    { name: Nodes.SymbolNoPrefix, type: NodeType.Expression, symbolName: namae },
+                    { name: Nodes.TrueValue, type: NodeType.Expression }
+                ]
+            }) : undefined);
             if (node.catch) {
                 sp();
                 __text += "catch";
@@ -772,11 +798,17 @@ export function _emit(node: Node, meta: any) {
                 sp();
                 simple_body_emit(node.catch[1]);
             }
-            if (node.finally) {
+            if (node.finally || namae) {
                 sp();
                 __text += "finally";
                 sp();
-                simple_body_emit(node.finally);
+
+                simple_body_emit(namae ? [{
+                    name: Nodes.TryStatment,
+                    type: NodeType.Statment,
+                    body: node.else,
+                    finally: node.finally || []
+                } as TryStatmentNode | { else?: Node[], catch?: TryStatmentNode["catch"] } as unknown as Node] : node.finally);
             }
             nl();
             break;
@@ -798,17 +830,6 @@ export function _emit(node: Node, meta: any) {
     }
     assert<string>(__text.toString());
     return __text;
-
-    function simple_body_emit(_body?: Node[]) {
-        _body ||= body as Node[];
-        __text += "{";
-        _body.length && nl();
-        ri();
-        emit_body(_body);
-        li();
-        length && is();
-        __text += "}";
-    }
 }
 export interface EmitterOptions {
     pretty?: boolean;
