@@ -7,8 +7,7 @@ import {
     randomVarName,
     includes,
     error_unexcepted_token,
-    abruptify,
-    assert
+    abruptify
 } from "./utils/util.js";
 import { _echo } from "./utils/_echo.js";
 import { FNNodeType, Nodes, ParameterNodeType, NodeType, AccessChainItemKind, Tokens, DiagnosticSeverity } from "./enums";
@@ -624,7 +623,6 @@ export var keywordsHandlers = {
                 if (next[0] !== Tokens.Symbol) {
                     error_unexcepted_token(next);
                 }
-                assert<Exclude<typeof toAppend, Node[]>>(toAppend);
                 toAppend![0] = next[1];
                 next = advance_next(stream, end_expression, prefix);
                 if (next[0] !== Tokens.Special || next[1] !== ")") {
@@ -653,5 +651,32 @@ export var keywordsHandlers = {
     },
     else() {
         throw "Else cannot exist as standalone statment";
+    },
+    while(stream, meta) {
+        var prefix = _echo("While statment:" as const);
+        var next = advance_next(stream, "(", prefix);
+        if (next[0] !== Tokens.Special || next[1] !== "(") {
+            error_unexcepted_token(next);
+        }
+        var arg = _parse(next = advance_next(stream, end_expression, prefix), stream, meta);
+        if (isArray(arg)) {
+            next = stream.next;
+        } else {
+            arg = [arg];
+            next = advance_next(stream, ")", prefix);
+        }
+        if (next[0] !== Tokens.Special || next[1] !== ")") {
+            error_unexcepted_token(next);
+        }
+        next = advance_next(stream, "{", prefix);
+        if (next[0] !== Tokens.Special || next[1] !== "{") {
+            error_unexcepted_token(next);
+        }
+        return {
+            name: Nodes.WhileStatment,
+            type: NodeType.Statment,
+            body: parse_body(stream, meta),
+            args: arg
+        };
     }
 } as KeywordParsers as { [key: string]: (...args: any[]) => Readonly<Node> | [Readonly<Node>]; };

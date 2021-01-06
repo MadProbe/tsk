@@ -93,7 +93,9 @@ export const enum Nodes {
     NewExpression,
     ClassExpression,
     NullAssertionExpression,
-    TryStatment
+    TryStatment,
+    WhileStatment,
+    DoWhileStatment
 }
 export const enum FNNodeType {
     Sync,
