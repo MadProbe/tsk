@@ -819,6 +819,16 @@ export function _emit(node: Node, meta: any) {
             simple_body_emit();
             break;
 
+        case Nodes.DoWhileStatment:
+            __text += "do";
+            sp();
+            simple_body_emit();
+            sp();
+            __text += "while";
+            sp();
+            __text += `(${ _emit(node.args![0], meta) })`;
+            break;
+
         case undefined: {
             const sp = meta.sp + "    ";
             __text += `/*\n${ sp }Cannot emit undefined, has something gone wrong?` +

@@ -119,11 +119,16 @@ restTest5(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 class A extends leel with echo {
     
 }
-__external("try{")
-null!;
-__external("}catch(e){console.error(e)}try{")
-new leel()._!.s;
-__external("}catch(e){console.error(e)}")
+try {
+    null!;
+} catch (e) {
+    console.error(e);
+}
+try {
+    new leel()._!.s;
+} catch (e) {
+    console.error(e);
+}
 try {
     0;
 } catch (cought) {
@@ -135,9 +140,14 @@ try {
 }
 {
     try { } finally { }
-    try { } else { }
+    try { } else {  }
     try { } catch { }
     try { }
+}
+i = 0;
+while (i < 10) {
+    console.log(i);
+    i += 1;
 }
 //;~;
 ;
