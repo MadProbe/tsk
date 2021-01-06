@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+process.on("unhandledRejection", console.error.bind(console, "Error: "));
 import { writeFileSync } from "fs";
 import { createRequire } from "module";
 import { dirname, extname, join, resolve } from "path";
@@ -23,5 +24,5 @@ import { log_errors } from "../lib/utils/util.js";
         console.log(newName);
         writeFileSync(newName, compiled.output);
     }
-})();
+})().catch(console.error.bind(console, "Error: "));
 
