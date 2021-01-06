@@ -636,8 +636,8 @@ export var keywordsHandlers = {
                 error_unexcepted_token(next);
             }
             if (word === "catch") {
-                assert<Exclude<typeof toAppend, Node[]>>(toAppend);
                 toAppend![1] = parse_body(stream, meta);
+                node[word] = toAppend!;
             } else {
                 node[word] = parse_body(stream, meta);
             }
