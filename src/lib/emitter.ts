@@ -805,7 +805,12 @@ export function _emit(node: Node, meta: any) {
                 simple_body_emit(namae ? [{
                     name: Nodes.TryStatment,
                     type: NodeType.Statment,
-                    body: node.else,
+                    body: [{
+                        name: Nodes.IfStatment,
+                        type: NodeType.Statment,
+                        body: node.else,
+                        args: { name: Nodes.SymbolNoPrefix, type: NodeType.Expression, symbolName: namae }
+                    }],
                     finally: node.finally || []
                 } as TryStatmentNode | { else?: Node[], catch?: TryStatmentNode["catch"]; } as unknown as Node] : node.finally);
             }
