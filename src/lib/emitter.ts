@@ -779,23 +779,23 @@ export function _emit(node: Node, meta: any) {
                 type: NodeType.Expression,
                 body: [
                     { name: Nodes.SymbolNoPrefix, type: NodeType.Expression, symbolName: namae },
-                    { name: Nodes.FalseValue, type: NodeType.Expression }
-                ]
-            } as Node].concat(body || [], {
-                name: Nodes.AssignmentExpression,
-                type: NodeType.Expression,
-                body: [
-                    { name: Nodes.SymbolNoPrefix, type: NodeType.Expression, symbolName: namae },
                     { name: Nodes.TrueValue, type: NodeType.Expression }
                 ]
-            }) : undefined);
+            } as Node].concat(body || []) : undefined);
             if (node.catch) {
                 sp();
                 __text += "catch";
                 sp();
                 __text += `(${ node.catch[0] ? `$${ node.catch[0] }` : "_" })`;
                 sp();
-                simple_body_emit(node.catch[1]);
+                simple_body_emit(node.else ? [{
+                    name: Nodes.AssignmentExpression,
+                    type: NodeType.Expression,
+                    body: [
+                        { name: Nodes.SymbolNoPrefix, type: NodeType.Expression, symbolName: namae },
+                        { name: Nodes.FalseValue, type: NodeType.Expression }
+                    ]
+                } as Node].concat(node.catch[1]) : node.catch[1]);
             }
             if (node.finally || namae) {
                 sp();
