@@ -3,7 +3,7 @@
 Removed Extra newline emitted on code block and try statment.  
 Fixed throw statment from not being parsed.  
 
-## Features
+## New Features
 This release provides 4 new features:
 1. Null asserted property access
 2. While statment
@@ -21,6 +21,7 @@ test![console.log("test") /* never gets called */];
 ```
 ### While and Do-While statments
 ```ts
+console = __external_var("console");
 // These statments are same as in JS
 i = 0;
 while (i < 10) {
@@ -115,7 +116,7 @@ try {
         console.log("inner finally");
     }
 } catch (error) {
-    console.error("outer", error);
+    console.error("outer", error); // prints outer Test
 }
 
 ```
