@@ -17,7 +17,7 @@ import { meberAccessOperators, end_expression } from "./utils/constants.js";
 import { _parseMemberAccess } from "./parsers/member-access.js";
 import { downgrade_next, advance_next } from "./utils/advancers.js";
 import { parse_body } from "./parsers/body-parser.js";
-import { __cache, main_parse, promises, _parse, diagnostics, parse_expression, __parse } from "./parser.js";
+import { __cache, main_parse, promises, _parse, diagnostics, parse_expression, __parse, __used } from "./parser.js";
 import { __external_var_creator } from "./parsers/__external_var.js";
 import type { ParseMeta, Node, ParameterNode, ClassNode, AccessChainItem, TryStatmentNode, UsingStatmentNode } from "./nodes";
 
@@ -439,6 +439,13 @@ export var keywordsHandlers = {
             name: Nodes.ReturnStatment,
             type: NodeType.Statment
         }, _parse(advance_next(stream, end_expression, "Return statment:"), stream, meta));
+    },
+    throw(stream, meta) {
+        __used.throw = true;
+        return abruptify({
+            name: Nodes.ThrowExpression,
+            type: NodeType.Statment
+        }, _parse(advance_next(stream, end_expression, "Throw statment:"), stream, meta));
     },
     yield(stream, meta) {
         var next = advance_next(stream, end_expression, "Yield expression:");
