@@ -2,6 +2,8 @@
 
 TSK PL (Programming language) is superset of JavaScript, adds some syntaxic functionality to existing JavaScript.
 TSK Complier transplies tsk code into valid JavaScript code and is written in TypeScript.
+This PL is meant to be compiled relatively fast compared to TypeScript and CoffeeScript PLs and 
+it's bundled compiler to be small (archived by various ways).
 
 ## Installing
 1. Download and install [Git](https://git-scm.com/downloads) (Skip if already installed).

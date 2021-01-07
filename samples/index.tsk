@@ -149,5 +149,29 @@ while (i < 10) {
     console.log(i);
     i += 1;
 }
+fn test__() {
+    try {
+        return "Hello from try block!";
+    } else {
+        return "Hello from else block!";
+    }
+}
+__external_var("console").log(test__()); // Prints "Hello from try block!"
+try {
+    try {
+        console.log("inner try");
+    } catch (error) {
+        // Never gets executed
+        console.error("inner", error);
+    } else {
+        // Note that placing else before catch 
+        // doesn't change anything
+        throw "Test"; 
+    } finally {
+        console.log("inner finally");
+    }
+} catch (error) {
+    console.error("outer", error);
+}
 //;~;
 ;

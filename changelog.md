@@ -1,8 +1,143 @@
+# Version 0.2.0
+## Bug fixes
+Removed Extra newline emitted on code block and try statment.  
+Fixed throw statment from not being parsed.  
+
+## Features
+This release provides 4 new features:
+1. Null asserted property access
+2. While statment
+3. Do-While statment
+4. Try-Catch-Else-Finally
+### Null asserted property access 
+```ts
+// Main dfference between normal and 
+// null asserted property access is 
+// that variable is checked for null and
+// undefined before access is performed
+test = undefined;
+test!.asdf;
+test![console.log("test") /* never gets called */];
+```
+### While and Do-While statments
+```ts
+// These statments are same as in JS
+i = 0;
+while (i < 10) {
+    console.log(i);
+    i += 1;
+}
+i = 0;
+do {
+    console.log(i);
+} while (i < 10);
+```
+
+### Try-Catch-Else-Finally
+
+#### Try-Catch
+```ts
+console = __external_var("console");
+try {
+    // Throw an example error
+    throw "Something bad happend!";
+} catch (e) {
+    // Executed because error inside of try statment is thrown
+    console.error(e); // prints "Something bad happend!" to console
+}
+```
+Also note that exception indentifier can be omitted:
+
+```ts
+JSON = __external_var("JSON");
+console = __external_var("console");
+/**
+ * This example is taken from MDN:
+ * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/try...catch#the_exception_identifier 
+ */
+fn isValidJSON(text) {
+    try {
+        JSON.parse(text);
+        return true;
+    } catch {
+        return false;
+    }
+}
+console.log(isValidJSON('[0, 1, 2, 3, 4]')); // Prints true to console 
+```
+
+#### Try-Else
+```ts
+console = __external_var("console");
+try {
+    if (__external_var("typeof window") !== "object") {
+        throw "Code executed not in browser";
+    }
+} else { 
+    // This block is executed when no errors 
+    // in try statment happend
+    // Note, that order of catch, else and 
+    // finally statments is not important.
+    console.log("Code executed in browser");
+} catch (e) {
+    console.log(e);
+}
+```
+
+```ts
+console = __external_var("console");
+fn test() {
+    try {
+        return "Hello from try block!";
+    } else {
+        return "Hello from else block!";
+    }
+}
+console.log(test()); // Prints "Hello from else block!", 
+// because else statment is executed even if try block returns, 
+// and it returned a string containing hello from else block,
+// same logic goes for finally block.
+```
+
+Also note that errors from else block is not handled by try statment's catch:
+```ts
+try {
+    try {
+        console.log("inner try");
+    } catch (error) {
+        // Never gets executed
+        console.error("inner", error);
+    } else {
+        // Note that placing else block  
+        // before catch doesn't change anything
+        throw "Test"; 
+    } finally {
+        console.log("inner finally");
+    }
+} catch (error) {
+    console.error("outer", error);
+}
+
+```
+
+#### Try-Finally
+
+```ts
+someResource = getResource();
+try {
+    someResource.doWork();
+} finally {
+    // Finally block statments are always executed, 
+    // even if error occurred in try block 
+    someResource.cleanup();
+}
+```
+
 # Version 0.1.2
-Keep statment parameters are now stricter:
-If arguments or this without property access found, diagnostic message reported with runtime error severity
-If symbol other than property access or variable reference found, an error thrown
-Now it is possible to do expressions with numbers and chain them (such as +, -, /, *, etc.)
+Keep statment parameters are now stricter:  
+If arguments or this without property access found, diagnostic message reported with runtime error severity  
+If symbol other than property access or variable reference found, an error thrown  
+Now it is possible to do expressions with numbers and chain them (such as +, -, /, *, etc.)  
 
 # Version 0.1.1
 fixed bug with named function parameters after rest parameter
