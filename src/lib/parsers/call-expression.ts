@@ -1,9 +1,9 @@
-import { Token, TokenStream } from "../utils/stream.js";
 import { isArray, error_unexcepted_token } from "../utils/util.js";
 import { Nodes, NodeType, Tokens } from "../enums";
 import { end_expression } from "../utils/constants.js";
 import { advance_next } from "../utils/advancers.js";
-import { _parse } from "../parser.js";
+import { __parse } from "../parser.js";
+import { Token, TokenStream } from "../utils/stream.js";
 import type { ParseMeta, Node } from "../nodes";
 
 export function parse_call_expression(next: Token, stream: TokenStream, meta: ParseMeta) {
@@ -21,7 +21,7 @@ export function parse_call_expression(next: Token, stream: TokenStream, meta: Pa
                 next = advance_next(stream, end_expression);
                 continue;
             } else {
-                arg = _parse(next, stream, meta) as Node | [Node];
+                arg = __parse(next, stream, meta) as Node | [Node];
             }
             if (isArray(arg)) {
                 next = stream.next;
