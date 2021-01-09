@@ -582,6 +582,8 @@ export function _emit(node: Node, meta: any) {
         case Nodes.BitwiseUnsignedRightShiftExpression:
         case Nodes.LooseComparison:
         case Nodes.StrictComparison:
+        case Nodes.LooseNegativeComparison:
+        case Nodes.StrictNegativeComparison:
         case Nodes.LessThanOrEqual:
         case Nodes.GreaterThanOrEqual:
         case Nodes.LessThan:
