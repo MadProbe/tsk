@@ -5,6 +5,7 @@ build/tsconfig.tsbuildinfo
 build/deps
 build/bundle.*
 build/out/lib/utils/valid-chars.*
+build/out/lib/utils/enums.js
 samples
 index.js
 index.html
