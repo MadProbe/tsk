@@ -237,7 +237,6 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
             body: next[1]
         }, stream, meta, ParseNodeType.String);
     } else if (isNode(next) || isSymbol(next)) {
-        meta.insideExpression = true;
         if (isNode(next)) {
             _sym = next;
         } else {

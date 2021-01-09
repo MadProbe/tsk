@@ -27,7 +27,7 @@ export function parse_array_expression(stream: TokenStream, meta: ParseMeta) {
         } else if (next[0] === Tokens.Operator && next[1] === "]") {
             break;
         }
-        parsed = _parse(next, stream, meta);
+        parsed = __parse(next, stream, meta);
         if (isArray(parsed)) {
             next = stream.next;
             parsed = parsed[0];
