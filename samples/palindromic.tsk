@@ -3,25 +3,25 @@
 console = __external_var("console");
 
 fn is_palindromic(n) => 
-  n.toString().split('').reverse()
-   .join('') == n.toString();
+    n.toString().split('').reverse()
+        .join('') == n.toString();
 
 fn find_largest_palindromic(big) {
-  res = 0;
-  i = 100;
-  while (i < big) {
-    j = 100;
-    while (j < big) {
-      v = i * j;
-      t = is_palindromic(v);
-      if (t && v > res) {
-        res = v;
-      }
-      j += 1;
+    res = 0;
+    i = 100;
+    while (i < big) {
+        j = 100;
+        while (j < big) {
+            v = i * j;
+            t = is_palindromic(v);
+            if (t && v > res) {
+                res = v;
+            }
+            j += 1;
+        }
+        i += 1;
     }
-    i += 1;
-  }
-  return res;
+    return res;
 }
 
 console.log(find_largest_palindromic(1000));

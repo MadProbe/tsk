@@ -2,22 +2,22 @@
 console = __external_var("console");
 
 fn factorial(n) {
-  c = 1;
-  r = 1;
-  while (c <= n) {
-    r *= c;
-    c += 1;
-  }
-  return r;
+    c = 1;
+    r = 1;
+    while (c <= n) {
+        r *= c;
+        c += 1;
+    }
+    return r;
 }
 
 console.log(factorial(5));
 
 fn factorial_r(n) {
-  if (n > 1) {
-    return factorial_r(n - 1) * n;
-  }
-  return 1;
+    if (n > 1) {
+        return factorial_r(n - 1) * n;
+    }
+    return 1;
 }
 
 console.log(factorial_r(5));

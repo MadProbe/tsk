@@ -1,5 +1,6 @@
 // Include statment includes code from specified file
 include "./example-module.tsk";
+[1, 2, 3];
 // variable declarations
 a = 2;
 b = 4;
@@ -19,7 +20,7 @@ fn sum(a, b, c) {
 sum(1, 2, 3, 0, , /*undefined*/, 10); // Empty holes will be replaced by undefined
 sum(4, 5, 6, , , ); // Empty holes at the call params end will get stripped
 sum(7, 8, 9, undefined); // Undefined value also will get stripped
-console.log(sum(a, b, c));
+__external_var("console").log(sum(a, b, c));
 window.sum = sum;
 async fn promise(value) => await pr(value);
 console.log(await promise(a));
@@ -173,5 +174,6 @@ try {
 } catch (error) {
     console.error("outer", error);
 }
+console.log("$$$".replace(__external_var("/\$?/g"), "()"))
 //;~;
 ;
