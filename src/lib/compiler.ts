@@ -53,9 +53,13 @@ export default function compile(url: string | URL | import("url").URL, opts?: Co
     } else return included.then(included => compileCode(included, opts as CompilerOptions & { url: string; }));
 }
 export * from "./lexer.js";
-export * from "./parser.js";
+export { parse } from "./parser.js";
 export * from "./wrapper.js";
 export * from "./emitter.js";
+export type { 
+    ParserOutput, 
+    SyntaxTree 
+} from "./parser";
 export type {
     AccessChainItem,
     ClassNode,
