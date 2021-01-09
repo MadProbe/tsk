@@ -13,3 +13,46 @@ while (i < 50) {
   console.log(i, to_word(i));
   i += 3;
 }
+
+console.log("====================================");
+
+fn new_range(str) {
+  rn = str.split("..").map(fn(e) => __external_var("eval")(e));
+  iter = __external_var("{}");
+  iter.next = fn*() {
+    i = rn[0];
+    while (i < rn[1]) {
+      yield i;
+      i += 1;
+    }
+  };
+  return iter;
+}
+
+fn for_in(val, block) {
+  if (__external_var("typeof")(val) == "string") {
+    val = new_range(val);
+    for_in(val, block);
+  } else if (__external_var("typeof")(val) == "number") {
+    for_in(new_range(__external_var("String")("0..{}").replace("{}", val)), block);
+  } else if (__external_var("typeof")(val) == "object") {
+    try {
+      i = val.next();
+      v = i.next();
+      while (v.done == false) {
+        block(v.value);
+        v = i.next();
+      }
+    } catch(e) {
+      return e;
+    }
+  }
+}
+
+for_in(4, fn(e) {
+  console.log(e);
+});
+
+for_in(new_range("4..8"), fn(e) {
+  console.log(e);
+});
