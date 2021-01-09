@@ -1,0 +1,51 @@
+
+// Value properties
+Infinity    = __external_var("Infinity");
+NaN         = __external_var("NaN");
+undefined   = __external_var("undefined");
+
+// Fundamental objects
+Object      = __external_var("Object");
+Function    = __external_var("Function");
+Boolean     = __external_var("Boolean");
+Symbol      = __external_var("Symbol");
+Array       = __external_var("Array");
+
+// Numbers and dates
+Number      = __external_var("Number");
+BigInt      = __external_var("BigInt");
+Math        = __external_var("Math");
+Date        = __external_var("Date");
+
+// Text processing
+String      = __external_var("String");
+RegExp      = __external_var("RegExp");
+
+// Global functions
+console     = __external_var("console");
+parseInt    = __external_var("parseInt");
+parseFloat  = __external_var("parseFloat");
+isNaN       = __external_var("isNaN");
+
+isNull      = fn(n) => if (n == null) {
+  return true;
+} else {
+  return false;
+};
+
+createObject = fn(...args) {
+  obj = __external_var("{}");
+  i = 0;
+  while (i + 1 < args.length) {
+    obj[args[i]] = args[i + 1];
+    i += 2;
+  }
+  return obj;
+};
+
+map          = fn(func, value) => value.map(func);
+filter       = fn(func, value) => value.filter(func); 
+
+// Alternative names
+Object.prototype.to_i      = fn() => parseInt(this); // to_int
+Object.prototype.to_s      = fn() => String(this);   // to_str

@@ -1,5 +1,5 @@
 
-console = __external_var("console");
+include "./builtin.tsk";
 
 fn to_word(val) {
   v = val % 10;
