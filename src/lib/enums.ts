@@ -95,7 +95,9 @@ export const enum Nodes {
     NullAssertionExpression,
     TryStatment,
     WhileStatment,
-    DoWhileStatment
+    DoWhileStatment,
+    LooseNegativeComparison,
+    StrictNegativeComparison
 }
 export const enum FNNodeType {
     Sync,
@@ -150,4 +152,11 @@ export const enum DiagnosticSeverity {
     RuntimeError,
     Error,
     FatalError
+}
+export const enum ParseNodeType {
+    Expression = "expression",
+    String = "string",
+    Number = "number",
+    Range = "range",
+    Indentifier = "indentifier"
 }
