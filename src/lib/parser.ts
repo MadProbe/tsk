@@ -31,7 +31,7 @@ import { parse_common_expressions } from "./parsers/common-expressions.js";
 import { parse_assignment } from "./parsers/assignments.js";
 import { keywordsHandlers } from "./keywords.js";
 import type { Node, ParseMeta, AccessChainItem } from "./nodes";
-import { parse_array_expression } from "./parsers/parse_array_expression";
+import { parse_array_expression } from "./parsers/array-expression.js";
 
 
 export type SyntaxTree = Node[];
