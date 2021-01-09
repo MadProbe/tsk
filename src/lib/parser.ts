@@ -22,7 +22,7 @@ import { _emit } from "./emitter.js";
 import { _echo } from "./utils/_echo.js";
 import { AssignmentOperatorTable } from "./utils/table.js";
 import { Diagnostic, IDiagnostic } from "./utils/diagnostics.js";
-import { js_auto_variables, end_expression } from "./utils/constants.js";
+import { js_auto_variables, end_expression, expression } from "./utils/constants.js";
 import { parseMemberAccess } from "./parsers/member-access.js";
 import { advance_next } from "./utils/advancers.js";
 import { parse_call_expression } from "./parsers/call-expression.js";
@@ -31,6 +31,7 @@ import { parse_common_expressions } from "./parsers/common-expressions.js";
 import { parse_assignment } from "./parsers/assignments.js";
 import { keywordsHandlers } from "./keywords.js";
 import type { Node, ParseMeta, AccessChainItem } from "./nodes";
+import { parse_array_expression } from "./parsers/parse_array_expression";
 
 
 export type SyntaxTree = Node[];
@@ -56,6 +57,7 @@ export function _parse(next: Token | Node, stream: TokenStream, meta: ParseMeta)
 }
 const indentifier = ParseNodeType.Indentifier;
 function parse_operators(_sym: Node, stream: TokenStream, meta: ParseMeta, type: ParseNodeType): Node | [Node] {
+    meta.insideExpression = true;
     var prefix: string;
     var node: Node;
     var parsed: Node | [Node] | undefined;
@@ -197,10 +199,8 @@ function parse_operators(_sym: Node, stream: TokenStream, meta: ParseMeta, type:
  */
 export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta): Node | [Node] {
     var prefix: string;
-    /**@type {import("./parser").Node}*/
-    var node: Node;
-    var parsed: Node | [Node], _sym: Node;
-    var expression__ = end_expression as ParseNodeType.Expression;
+    var _sym: Node;
+    var expression__ = expression as ParseNodeType.Expression;
     var type__ = expression__ as ParseNodeType;
     // @ts-ignore
     if (next[0] === Tokens.Keyword && !includes(js_auto_variables, next[1])) {
@@ -215,13 +215,13 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
             type: NodeType.Expression,
             body: _temp
         };
-        advance_next(stream, end_expression);
+        advance_next(stream, expression);
         return parse_operators(_sym, stream, meta, ParseNodeType.Number);
         // @ts-ignore
     } else if (next[0] === Tokens.Range) {
         assert<Token>(next);
         var splitted = next[1].split('..');
-        advance_next(stream, end_expression);
+        advance_next(stream, expression);
         return parse_operators({
             name: Nodes.RangeValue,
             type: NodeType.Expression,
@@ -230,7 +230,7 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
         // @ts-ignore
     } else if (next[0] === Tokens.String) {
         assert<Token>(next);
-        advance_next(stream, end_expression);
+        advance_next(stream, expression);
         return parse_operators({
             name: Nodes.StringValue,
             type: NodeType.Expression,
@@ -252,12 +252,12 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
                 };
             }
         }
-        next = advance_next(stream, end_expression);
+        next = advance_next(stream, expression);
         if (next[0] === Tokens.Keyword && next[1] === "with") {
             return [_sym];
         }
         if (next[0] === Tokens.String) {
-            advance_next(stream, end_expression);
+            advance_next(stream, expression);
             return parse_operators({
                 name: Nodes.CallExpression,
                 type: NodeType.Expression,
@@ -377,41 +377,7 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
         meta.insideExpression = true;
         switch (next[1]) {
             case "[":
-                node = {
-                    name: Nodes.Array,
-                    type: NodeType.Expression,
-                    body: []
-                };
-                var body = node.body! as Node[];
-                while (1) {
-                    next = advance_next(stream, end_expression);
-                    if (next[0] === Tokens.Special && next[1] === ",") {
-                        body.push({
-                            name: Nodes.UndefinedValue,
-                            type: NodeType.Expression
-                        });
-                        continue;
-                    } else if (next[0] === Tokens.Operator && next[1] === "]") {
-                        break;
-                    }
-                    parsed = _parse(next, stream, meta);
-                    if (isArray(parsed)) {
-                        next = stream.next;
-                        parsed = parsed[0];
-                    } else next = advance_next(stream, ']" or ",');
-                    if ((next[0] !== Tokens.Special || next[1] !== ",") &&
-                        (next[0] !== Tokens.Operator || next[1] !== ']')) {
-                        error_unexcepted_token(next);
-                    }
-                    body.push(parsed);
-                    if (next[1] === "]") {
-                        break;
-                    }
-                }
-                // trailing undefineds are needed here
-                // remove_trailing_undefined(body);
-                parsed = __parse(node, stream, meta);
-                return parsed;
+                return parse_array_expression(stream, meta);
         }
     }
     return undefined!;
