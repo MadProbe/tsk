@@ -866,6 +866,6 @@ var __top: Node;
 export function emit(node: Node, { pretty = false, url = "" }: EmitterOptions = {}) {
     __pretty = pretty;
 
-    // console.log(inspect(node, !0, 1 / 0, !0));
+    // inspectLog(node);
     return _emit(__top = node, { url });
 }
