@@ -1,9 +1,9 @@
-import { Token, TokenStream } from "../utils/stream.js";
 import { isArray } from "../utils/util.js";
 import { Tokens, DiagnosticSeverity } from "../enums";
 import { Diagnostic } from "../utils/diagnostics.js";
 import { advance_next } from "../utils/advancers.js";
 import { _parse, diagnostics } from "../parser.js";
+import type { Token, TokenStream } from "../utils/stream.js";
 import type { ParseMeta, Node } from "../nodes";
 
 /**

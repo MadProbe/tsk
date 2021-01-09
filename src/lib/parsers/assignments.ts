@@ -1,10 +1,10 @@
-import { Token, TokenStream } from "../utils/stream.js";
 import { Nodes, NodeType, AccessChainItemKind, DiagnosticSeverity } from "../enums";
 import { AssignmentOperatorTable, AssignmentOperatorTableKeys } from "../utils/table.js";
 import { Diagnostic } from "../utils/diagnostics.js";
 import { end_expression } from "../utils/constants.js";
 import { advance_next } from "../utils/advancers.js";
 import { diagnostics, _parse } from "../parser.js";
+import type { Token, TokenStream } from "../utils/stream.js";
 import type { Node, ParseMeta, AccessChainItem } from "../nodes";
 
 export function parse_assignment(_sym: Node, next: Token, stream: TokenStream, meta: ParseMeta): Node | undefined {
