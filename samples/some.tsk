@@ -2,9 +2,9 @@
 console = __external_var("console");
 
 fn to_word(val) {
-  v = val % 10;
-  if (v == 1) { return "рубль"; }
-  else if (v == 2) { return "рубля"; }
+  v = val.toString().slice(-1);
+  if (v == "1") { return "рубль"; }
+  else if (v == "2") { return "рубля"; }
   else { return "рублей"; }
 }
 
