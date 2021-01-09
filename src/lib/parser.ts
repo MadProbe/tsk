@@ -32,6 +32,7 @@ import { parse_assignment } from "./parsers/assignments.js";
 import { keywordsHandlers } from "./keywords.js";
 import type { Node, ParseMeta, AccessChainItem } from "./nodes";
 import { parse_array_expression } from "./parsers/array-expression.js";
+import { parse_group_expression } from "./parsers/group-expression.js";
 
 
 export type SyntaxTree = Node[];
@@ -280,6 +281,8 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
                 type: NodeType.Statment,
                 body: parse_body(stream, meta)
             };
+        } else if (next[1] === "(") {
+            return parse_group_expression(stream, meta);
         }
     } else if (next[0] === Tokens.Operator) {
         meta.insideExpression = true;
