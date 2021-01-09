@@ -6,3 +6,4 @@ export const keywords: readonly string[] = _echo("do|if|in|for|new|try|case|else
 export const validChars = /^[$\w_][\d\w$_]*$/m;
 export const $2charoperators = ["&&", "**", "||", "??", "==", "!=", "=>", "<=", ">=", "..", "+=", "/=", "&=", "-=", "++", "--", "*=", "|=", "//", ">>", "<<", "?.", "%=", "^=", "|>", "@@", "/*", "::", "!.", "!["] as const;
 export const $3charoperators = ["?.[", "?.(", "??=", "||=", "&&=", "**=", ">>>", "...", ">>=", "<<=", "===", "!=="] as const;
+export { end_expression as expression };

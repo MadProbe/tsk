@@ -85,7 +85,8 @@ export type {
     NodeType,
     Nodes,
     Tokens,
-    FNNodeType
+    FNNodeType,
+    ParseNodeType
 } from "./enums";
 export type {
     ArrayValueType
