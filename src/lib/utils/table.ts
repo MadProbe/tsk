@@ -28,7 +28,9 @@ export var CommonOperatorTable = {
     "<": Nodes.LessThan,
     "<=": Nodes.LessThanOrEqual,
     "==": Nodes.LooseComparison,
-    "===": Nodes.StrictComparison
+    "===": Nodes.StrictComparison,
+    "!=": Nodes.LooseNegativeComparison,
+    "!==": Nodes.StrictNegativeComparison
 }
 export var AssignmentOperatorTable = {
     "=": Nodes.AssignmentExpression,
