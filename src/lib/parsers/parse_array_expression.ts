@@ -1,10 +1,10 @@
-import { Token, TokenStream } from "../utils/stream.js";
 import { isArray, error_unexcepted_token } from "../utils/util.js";
 import { Nodes, NodeType, Tokens } from "../enums";
 import { end_expression } from "../utils/constants.js";
 import { advance_next } from "../utils/advancers.js";
-import { Node, ParseMeta } from "../nodes";
 import { _parse, __parse } from "../parser";
+import type { Node, ParseMeta } from "../nodes";
+import type { Token, TokenStream } from "../utils/stream.js";
 
 export function parse_array_expression(stream: TokenStream, meta: ParseMeta) {
     /**@type {import("./parser").Node}*/
