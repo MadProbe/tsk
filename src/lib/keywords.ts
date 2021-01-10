@@ -366,7 +366,7 @@ export var keywordsHandlers = {
         return node;
     },
     class(stream, meta) {
-        const type = meta.insideExpression ? NodeType.Expression : NodeType.Statment;
+        const type = meta.ie ? NodeType.Expression : NodeType.Statment;
         const node = {
             name: Nodes.ClassExpression,
             type,

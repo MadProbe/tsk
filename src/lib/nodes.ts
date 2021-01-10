@@ -65,7 +65,7 @@ export type Privatify<T extends object> = {
     [Key in keyof T as PrivatifyString<Key extends string ? Key : never>]-?: T[Key];
 };
 export interface ParseMeta {
-    insideExpression?: boolean;
+    ie?: boolean;
     outer: Node;
     filename: string;
     [key: string]: unknown;

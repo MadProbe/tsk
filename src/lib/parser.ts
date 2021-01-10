@@ -53,12 +53,12 @@ export type SyntaxTree = Node[];
  */
 export function _parse(next: Token | Node, stream: TokenStream, meta: ParseMeta): Node | [Node] {
     var parsed = __parse(next, stream, meta);
-    meta.insideExpression = false;
+    meta.ie = false;
     return parsed;
 }
 const indentifier = ParseNodeType.Indentifier;
 function parse_operators(_sym: Node, stream: TokenStream, meta: ParseMeta, type: ParseNodeType): Node | [Node] {
-    meta.insideExpression = true;
+    meta.ie = true;
     var prefix: string;
     var node: Node;
     var parsed: Node | [Node] | undefined;
@@ -285,7 +285,7 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
             return parse_group_expression(stream, meta);
         }
     } else if (next[0] === Tokens.Operator) {
-        meta.insideExpression = true;
+        meta.ie = true;
         switch (next[1]) {
             case "[":
                 return parse_array_expression(stream, meta);
