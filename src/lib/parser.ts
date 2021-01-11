@@ -334,7 +334,7 @@ export function parse(lexed: TokenList, filename: string, cache: boolean): Parse
     __top_fn_node = {
         name: Nodes.AsyncFunctionExpression,
         type: NodeType.Expression,
-        params: [{ name: "u", type: ParameterNodeType.NoPrefix }], // needed for UndefinedValue node
+        params: [],
         locals: []
     };
     __used = {};
