@@ -18,9 +18,9 @@ var __contains = `function __contains(i,v){` + // i = iterable, v = value
 var __throw = "function __throw(e){throw e}";
 
 export function wrap(code: string, used: Record<string, boolean>) {
-    return `(function(u){var _=function(){},p=Promise,c=_.call,__bind=c.bind(_.bind),` +
-        `pr=__bind(p.resolve,p),__call=__bind(c,c),__apply=__bind(c,_.apply);` +
+    return `(function(u){var p=Promise,c=n.call,__bind=c.bind(n.bind),` +
+        `pr=__bind(p.resolve,p),__call=__bind(c,c),__apply=__bind(c,n.apply);` +
         `${ __nullish }${ __async }${ used.contains ? __contains : "" }${ used.na ? __null_assert : "" }` +
         `${ used.throw ? __throw : "" }` +
-        `return(${ code })()})()`;
+        `return ${ code }})()()`;
 }
