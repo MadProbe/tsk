@@ -20,7 +20,7 @@ var __throw = "function __throw(e){throw e}";
 export function wrap(code: string, used: Record<string, boolean>) {
     return `(function(p,u){var c=n.call,__bind=c.bind(n.bind),` +
         `pr=__bind(p.resolve,p),__call=__bind(c,c),__apply=__bind(c,n.apply);` +
-        `${ __nullish }${ __async }${ used.contains ? __contains : "" }${ used.na ? __null_assert : "" }` +
-        `${ used.throw ? __throw : "" }` +
+        `${ __nullish }${ __async }${ used.contains ? __contains : "" }${ used.na ? __null_assert : "" }${ used.throw ?
+            __throw : "" }` +
         `return ${ code }})(Promise)()`;
 }
