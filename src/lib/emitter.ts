@@ -62,7 +62,9 @@ function isSimple(node: Node) {
         Nodes.Symbol,
         Nodes.SymbolNoPrefix,
         Nodes.UndefinedValue,
-        Nodes.ArgumentsObject
+        Nodes.ArgumentsObject,
+        // Will be removed if bugs encountered
+        Nodes.CallExpression
     ] as const, node.name);
 }
 /**
