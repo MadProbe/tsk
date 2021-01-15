@@ -723,8 +723,8 @@ export function _emit(node: Node, meta: any) {
         case Nodes.LiteralLogicalNotExpression:
             assert<[Node]>(body);
             assert<string>(_);
-            _ = _emit(body[0], meta);
-            __text += `!${ isSimple(body[0]) ? _ : `(${ as_expression(_) })` }`;
+            _ = as_expression(body[0]);
+            __text += `!${ isSimple(_) ? _emit(_, meta) : `(${ _emit(_, meta) })` }`;
             break;
 
         case Nodes.KeepStatment:
