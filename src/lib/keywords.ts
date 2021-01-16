@@ -715,5 +715,16 @@ export var keywordsHandlers = {
             body,
             args: arg
         };
+    },
+    import(stream, meta) {
+        const next = advance_next(stream, end_expression, "Import statment:");
+        if (next[0] !== Tokens.Special && next[1] !== "(") {
+            error_unexcepted_token(next);
+        }
+        return {
+            name: Nodes.ImportExpression,
+            type: NodeType.Expression,
+            args: parse_call_expression(advance_next(stream, end_expression, "Import statment:"), stream, meta)
+        } as Node;
     }
 } as KeywordParsers as { [key: string]: (...args: any[]) => Readonly<Node> | [Readonly<Node>]; };
