@@ -64,7 +64,8 @@ function isSimple(node: Node) {
         Nodes.Symbol,
         Nodes.SymbolNoPrefix,
         Nodes.UndefinedValue,
-        Nodes.ArgumentsObject
+        Nodes.ArgumentsObject,
+        Nodes.ExternalVariable
     ] as const, node.name);
 }
 /**
