@@ -113,11 +113,7 @@ function parse_operators(_sym: Node, stream: TokenStream, meta: ParseMeta, type:
                     `any effect when performed on ${ type } value, assertion will be stripped.`));
                 next[1] = isDotMemberAccess ? "." : "[";
             }
-            return parseMemberAccess(type === ParseNodeType.Number || type === end_expression ? {
-                name: Nodes.GroupExpression,
-                type: NodeType.Expression,
-                body: [_sym]
-            } : _sym, next, stream, meta);
+            return parseMemberAccess(_sym, next, stream, meta);
         }
 
         case "=>":

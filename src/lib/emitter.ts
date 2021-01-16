@@ -62,9 +62,7 @@ function isSimple(node: Node) {
         Nodes.Symbol,
         Nodes.SymbolNoPrefix,
         Nodes.UndefinedValue,
-        Nodes.ArgumentsObject,
-        // Will be removed if bugs encountered
-        Nodes.CallExpression
+        Nodes.ArgumentsObject
     ] as const, node.name);
 }
 /**
@@ -149,7 +147,8 @@ export function _emit(node: Node, meta: any) {
         for (var index = 0, length = nodes.length, __text = ""; index < length; index++) {
             var node = nodes[index], body = node.body, nodeKind = node.kind;
             if (nodeKind === AccessChainItemKind.Head) {
-                __text += _emit(body, meta);
+                __text += _emit(isSimple(body = as_expression(body)) && body.name !== Nodes.NumberValue ? body : 
+                    ({ name: Nodes.GroupExpression, type: NodeType.Expression, body: [body] }), meta);
             } else if (nodeKind === AccessChainItemKind.Normal) {
                 __text += `.${ _emit(body, meta) }`;
             } else if (nodeKind === AccessChainItemKind.Computed) {
