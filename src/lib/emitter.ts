@@ -211,6 +211,21 @@ export function _emit(node: Node, meta: any) {
         }
         __text += ")[0]";
     }
+    function emitCallExpression() {
+        __text += "(";
+        elementArgs = node.args!;
+        length = elementArgs.length;
+        index = 0;
+        for (; index < length; index++) {
+            let node = elementArgs[index];
+            __text += _emit(node, meta);
+            if (index + 1 < length) {
+                __text += ",";
+                sp();
+            }
+        }
+        __text += ")";
+    }
     function simple_body_emit(_body?: Node[]) {
         _body ||= body as Node[];
         __text += "{";
@@ -476,19 +491,7 @@ export function _emit(node: Node, meta: any) {
         case Nodes.CallExpression:
             assert<Node[]>(body);
             __text += _emit(body[0], meta);
-            __text += "(";
-            elementArgs = node.args!;
-            length = elementArgs.length;
-            index = 0;
-            for (; index < length; index++) {
-                let node = elementArgs[index];
-                __text += _emit(node, meta);
-                if (index + 1 < length) {
-                    __text += ",";
-                    sp();
-                }
-            }
-            __text += ")";
+            emitCallExpression();
             break;
 
         case Nodes.GroupExpression:
@@ -838,6 +841,11 @@ export function _emit(node: Node, meta: any) {
             __text += "while";
             sp();
             __text += `(${ _emit(node.args![0], meta) })`;
+            break;
+
+        case Nodes.ImportExpression:
+            __text += "import";
+            emitCallExpression();
             break;
 
         case undefined: {
