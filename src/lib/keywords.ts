@@ -20,6 +20,7 @@ import { parse_body } from "./parsers/body-parser.js";
 import { __cache, main_parse, promises, _parse, diagnostics, parse_expression, __parse, __used } from "./parser.js";
 import { __external_var_creator } from "./parsers/__external_var.js";
 import type { ParseMeta, Node, ParameterNode, ClassNode, AccessChainItem, TryStatmentNode, UsingStatmentNode } from "./nodes";
+import { parse_call_expression } from "./parsers/call-expression.js";
 
 interface KeywordParsers {
     [name: string]: (stream: TokenStream, meta: ParseMeta, ...args: any[]) => Node;
@@ -53,10 +54,10 @@ export var keywordsHandlers = {
         if (next[0] !== Tokens.String) {
             error_unexcepted_token(next);
         }
-        var _next = advance_next(stream, ";");
-        if (_next[0] !== Tokens.Special || _next[1] !== ";") {
-            throw "Include statment must be follewed by a semicolon!";
-        }
+        // var _next = advance_next(stream, ";");
+        // if (_next[0] !== Tokens.Special || _next[1] !== ";") {
+        //     throw "Include statment must be follewed by a semicolon!";
+        // }
         var file = new URL(next[1], meta.filename);
         var included = include(file, __cache);
         /**
@@ -212,9 +213,6 @@ export var keywordsHandlers = {
             error_unexcepted_token(next);
         }
         error_unexcepted_token([Tokens.Keyword, "interface"]);
-    },
-    import(stream) {
-        error_unexcepted_token(stream.next);
     },
     /**
      * @param {import("./utils/stream.js").TokenStream} stream
