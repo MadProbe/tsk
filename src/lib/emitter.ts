@@ -39,7 +39,9 @@ function isFunctionNode(node: Node) {
         Nodes.AsyncGeneratorFunctionExpression,
         Nodes.IncludeStatment, // Doesn't resresent function node, but doesn't require any ;
         Nodes.KeepStatment,
-        Nodes.CodeBlock
+        Nodes.CodeBlock,
+        Nodes.TryStatment,
+        Nodes.IfStatment
     ] as const, node.name);
 }
 function isSimple(node: Node) {
