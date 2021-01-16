@@ -37,7 +37,7 @@ function isFunctionNode(node: Node) {
         Nodes.AsyncFunctionExpression,
         Nodes.GeneratorFunctionExpression,
         Nodes.AsyncGeneratorFunctionExpression,
-        Nodes.IncludeStatment, // Doesn't resresent function node, but doesn't require any ;
+        Nodes.IncludeStatment, // Don't represent function node, but don't require any ;
         Nodes.KeepStatment,
         Nodes.CodeBlock,
         Nodes.TryStatment,
