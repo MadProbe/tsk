@@ -97,7 +97,8 @@ export const enum Nodes {
     WhileStatment,
     DoWhileStatment,
     LooseNegativeComparison,
-    StrictNegativeComparison
+    StrictNegativeComparison,
+    ImportExpression
 }
 export const enum FNNodeType {
     Sync,
