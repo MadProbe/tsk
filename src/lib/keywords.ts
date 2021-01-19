@@ -50,15 +50,37 @@ export var keywordsHandlers = {
      * @param {import("./parser").ParseMeta} meta
      */
     include(stream, meta) {
-        var next = advance_next(stream, "string");
-        if (next[0] !== Tokens.String) {
+        var next = advance_next(stream, `string" | "{`), node: Node, file: URL;
+        if (next[0] === Tokens.String) {
+            node = {
+                name: Nodes.IncludeStatment,
+                type: NodeType.Expression
+            };
+        } else if (next[0] === Tokens.Special && next[1] === "{") {
+            node = {
+                name: Nodes.NamedIncludeStatment,
+                type: NodeType.Statment
+            };
+            next = advance_next(stream, "}");
+            if (next[0] !== Tokens.Special || next[1] !== "}") {
+                error_unexcepted_token(next);
+            }
+            next = advance_next(stream, "from");
+            if (next[0] !== Tokens.Keyword || next[1] !== "from") {
+                error_unexcepted_token(next);
+            }
+            next = advance_next(stream, "string");
+            if (next[0] !== Tokens.String) {
+                error_unexcepted_token(next);
+            }
+        } else {
             error_unexcepted_token(next);
         }
+        file = new URL(next[1], meta.filename);
         // var _next = advance_next(stream, ";");
         // if (_next[0] !== Tokens.Special || _next[1] !== ";") {
         //     throw "Include statment must be follewed by a semicolon!";
         // }
-        var file = new URL(next[1], meta.filename);
         var included = include(file, __cache);
         /**
          * @param {string} included
@@ -68,18 +90,6 @@ export var keywordsHandlers = {
             node.body = parsed;
             return parsed;
         }
-        var node = {
-            name: Nodes.IncludeStatment,
-            type: NodeType.Expression,
-            // /**
-            //  * @param {boolean} pretty 
-            //  * @param {string} whitespace
-            //  */
-            // toString(pretty: boolean, whitespace: string) {
-            //     var included = include(file);
-            //     return typeof included === "string" ? __include_helper__(included, pretty, whitespace) : included.then(included => __include_helper__(included, pretty, whitespace));
-            // }
-        } as Node;
         node.body = (typeof included !== "string" ? promises[promises.push(included.then(_)) - 1] : _(included)) as any;
         return node;
     },

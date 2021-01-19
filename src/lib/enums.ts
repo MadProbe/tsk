@@ -98,7 +98,8 @@ export const enum Nodes {
     DoWhileStatment,
     LooseNegativeComparison,
     StrictNegativeComparison,
-    ImportExpression
+    ImportExpression,
+    NamedIncludeStatment
 }
 export const enum FNNodeType {
     Sync,
