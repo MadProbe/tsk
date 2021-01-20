@@ -99,7 +99,8 @@ export const enum Nodes {
     LooseNegativeComparison,
     StrictNegativeComparison,
     ImportExpression,
-    NamedIncludeStatment
+    NamedIncludeStatment,
+    SymbolShortcut
 }
 export const enum FNNodeType {
     Sync,

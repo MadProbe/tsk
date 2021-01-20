@@ -248,12 +248,12 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
                 };
             }
         }
-        next = advance_next(stream, expression);
+        next = advance_next(stream, end_expression);
         if (next[0] === Tokens.Keyword && next[1] === "with") {
             return [_sym];
         }
         if (next[0] === Tokens.String) {
-            advance_next(stream, expression);
+            advance_next(stream, end_expression);
             return parse_operators({
                 name: Nodes.CallExpression,
                 type: NodeType.Expression,
@@ -285,6 +285,22 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
         switch (next[1]) {
             case "[":
                 return parse_array_expression(stream, meta);
+
+            case "@":
+                Diagnostic(DiagnosticSeverity.Warn, "Decorators are not supported yet!");
+                break;
+            
+            case "@@":
+                next = advance_next(stream, "symbol-constructor-property");
+                if (next[0] !== Tokens.Symbol && next[0] !== Tokens.Keyword) {
+                    error_unexcepted_token(next);
+                }
+                advance_next(stream, end_expression);
+                return parse_operators({
+                    name: Nodes.SymbolShortcut,
+                    type: NodeType.Expression,
+                    body: next[1]
+                }, stream, meta, expression__);
         }
     }
     return undefined!;

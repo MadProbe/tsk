@@ -150,7 +150,7 @@ export function _emit(node: Node, meta: any) {
         for (var index = 0, length = nodes.length, __text = ""; index < length; index++) {
             var node = nodes[index], body = node.body, nodeKind = node.kind;
             if (nodeKind === AccessChainItemKind.Head) {
-                __text += _emit(isSimple(body = as_expression(body)) && body.name !== Nodes.NumberValue ? body : 
+                __text += _emit(isSimple(body = as_expression(body)) && body.name !== Nodes.NumberValue ? body :
                     ({ name: Nodes.GroupExpression, type: NodeType.Expression, body: [body] }), meta);
             } else if (nodeKind === AccessChainItemKind.Normal) {
                 __text += `.${ _emit(body, meta) }`;
@@ -823,6 +823,11 @@ export function _emit(node: Node, meta: any) {
                     finally: node.finally || []
                 } as TryStatmentNode | { else?: Node[], catch?: TryStatmentNode["catch"]; } as unknown as Node] : node.finally);
             }
+            break;
+
+        case Nodes.SymbolShortcut:
+            assert<string>(body);
+            __text += `Symbol.${ body }`;
             break;
 
         case Nodes.WhileStatment:

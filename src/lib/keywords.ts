@@ -7,7 +7,8 @@ import {
     randomVarName,
     includes,
     error_unexcepted_token,
-    abruptify
+    abruptify,
+    assert
 } from "./utils/util.js";
 import { _echo } from "./utils/_echo.js";
 import { FNNodeType, Nodes, ParameterNodeType, NodeType, AccessChainItemKind, Tokens, DiagnosticSeverity } from "./enums";
@@ -623,7 +624,9 @@ export var keywordsHandlers = {
             prefix = _echo("Try statment:" as const),
             next = advance_next(stream, end_expression, prefix);
         if (next[0] === Tokens.Keyword && next[1] === "using") {
-            diagnostics.push(Diagnostic(DiagnosticSeverity.Warn, `Try-Using statment isn't supported yet!`));
+            assert<UsingStatmentNode>(node);
+            node.args = [];
+            
         }
         if (next[0] === Tokens.Special && next[1] === "{") {
             node.body = parse_body(stream, meta);
