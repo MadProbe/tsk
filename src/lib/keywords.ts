@@ -19,8 +19,8 @@ import { downgrade_next, advance_next } from "./utils/advancers.js";
 import { parse_body } from "./parsers/body-parser.js";
 import { __cache, main_parse, promises, _parse, diagnostics, parse_expression, __parse, __used } from "./parser.js";
 import { __external_var_creator } from "./parsers/__external_var.js";
-import type { ParseMeta, Node, ParameterNode, ClassNode, AccessChainItem, TryStatmentNode, UsingStatmentNode } from "./nodes";
 import { parse_call_expression } from "./parsers/call-expression.js";
+import type { ParseMeta, Node, ParameterNode, ClassNode, AccessChainItem, UsingStatmentNode } from "./nodes";
 
 interface KeywordParsers {
     [name: string]: (stream: TokenStream, meta: ParseMeta, ...args: any[]) => Node;

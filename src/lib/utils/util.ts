@@ -1,7 +1,7 @@
 import { js_auto_variables } from "./constants.js";
+import { Nodes, Tokens } from "../enums";
 import type { Token } from "./stream";
 import type { Node } from "../nodes";
-import { Nodes, Tokens } from "../enums";
 
 export type CallFunctionType = <T extends (...args: any[]) => void>(func: T, thisArg: ThisParameterType<T> | undefined, ...args: Parameters<T>) => ReturnType<T>;
 export type ApplyFunctionType = <T extends (...args: any[]) => void>(func: T, thisArg: ThisParameterType<T> | undefined, args: Parameters<T> | IArguments) => ReturnType<T>;

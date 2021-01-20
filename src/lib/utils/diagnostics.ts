@@ -1,4 +1,4 @@
-import { DiagnosticSeverity } from "../enums.js";
+import type { DiagnosticSeverity } from "../enums.js";
 
 
 export interface IDiagnostic {

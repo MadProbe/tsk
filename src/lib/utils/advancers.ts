@@ -1,6 +1,6 @@
-import type { Token, TokenStream } from "./stream.js";
 import { includes } from "./util.js";
 import { Tokens } from "../enums";
+import type { Token, TokenStream } from "./stream.js";
 
 export function downgrade_next(stream: TokenStream) {
     while (includes([Tokens.Whitespace, Tokens.MultilineComment, Tokens.Comment], stream.down()[0]));
