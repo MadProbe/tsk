@@ -81,8 +81,8 @@ function parse_operators(_sym: Node, stream: TokenStream, meta: ParseMeta, type:
         case "(":
         case "?.(":
             // console.log("():", next);
-            notExpressionOrIndentifier && diagnostics.push(Diagnostic(DiagnosticSeverity.RuntimeError,
-                `Call on ${ type } will fail at runtime because ${ type } is not callable.`));
+            notExpressionOrIndentifier && pushDiagnosticMessage(DiagnosticSeverity.RuntimeError,
+                `Call on ${ type } will fail at runtime because ${ type } is not callable.`);
             var args = parse_call_expression(advance_next(stream, ")", "Call expression:"), stream, meta);
             remove_trailing_undefined(args);
             node = {
@@ -102,15 +102,15 @@ function parse_operators(_sym: Node, stream: TokenStream, meta: ParseMeta, type:
             let body = next[1];
             assert<string>(_);
             if (body === ".") {
-                type === ParseNodeType.Number && diagnostics.push(Diagnostic(DiagnosticSeverity.Warn,
-                    `Please disambiguate normal member access expression when member access performed on ${ type } value by wrapping ${ type } value in parenthezis`));
+                type === ParseNodeType.Number && pushDiagnosticMessage(DiagnosticSeverity.Warn,
+                    `Please disambiguate normal member access expression when member access performed on ${ type } value by wrapping ${ type } value in parenthezis`);
             }
             if (notExpressionOrIndentifier && includes(["!.", "![", "?.", "?.["] as const, body)) {
                 var isDotMemberAccess = body == "!." || body == "?.";
-                diagnostics.push(Diagnostic(DiagnosticSeverity.Warn,
+                pushDiagnosticMessage(DiagnosticSeverity.Warn,
                     (body == "![" || body == "!." ? "Null assertive" : "Optional") +
                     `${ isDotMemberAccess ? "" : " computed" } member access doesn't have ` +
-                    `any effect when performed on ${ type } value, assertion will be stripped.`));
+                    `any effect when performed on ${ type } value, assertion will be stripped.`);
                 next[1] = isDotMemberAccess ? "." : "[";
             }
             return parseMemberAccess(_sym, next, stream, meta);
@@ -118,7 +118,7 @@ function parse_operators(_sym: Node, stream: TokenStream, meta: ParseMeta, type:
 
         case "=>":
             if (type !== indentifier) {
-                diagnostics.push(Diagnostic(DiagnosticSeverity.RuntimeError, "Arrow functions shortcut cannot contain non-symbol parameter"));
+                pushDiagnosticMessage(DiagnosticSeverity.RuntimeError, "Arrow functions shortcut cannot contain non-symbol parameter");
             }
             node = {
                 name: Nodes.FunctionExpression,
@@ -161,9 +161,9 @@ function parse_operators(_sym: Node, stream: TokenStream, meta: ParseMeta, type:
                 body: [_sym]
             }, stream, meta) as Node;
             if (notExpressionOrIndentifier) {
-                diagnostics.push(Diagnostic(DiagnosticSeverity.Warn,
+                pushDiagnosticMessage(DiagnosticSeverity.Warn,
                     `Null assertion expression doesn't have any effect on ${ type } value, ` +
-                    `null assertion operator will be stripped in output`));
+                    `null assertion operator will be stripped in output`);
             } else {
                 __used.na = true;
             }
@@ -172,11 +172,11 @@ function parse_operators(_sym: Node, stream: TokenStream, meta: ParseMeta, type:
         default:
             parsed = parse_common_expressions(_sym, next, stream, meta);
             if (next[1] in AssignmentOperatorTable) {
-                type === indentifier || _sym.name === Nodes.MemberAccessExpression || diagnostics.push(Diagnostic(DiagnosticSeverity.RuntimeError, `Assignment on ${ type } will fail at runtime.`));
+                type === indentifier || _sym.name === Nodes.MemberAccessExpression || pushDiagnosticMessage(DiagnosticSeverity.RuntimeError, `Assignment on ${ type } will fail at runtime.`);
                 parsed = parse_assignment(_sym, next, stream, meta);
             }
             if (!parsed) {
-                diagnostics.push(Diagnostic(DiagnosticSeverity.Warn, `Operator "${ next[1] }" is not supported`));
+                pushDiagnosticMessage(DiagnosticSeverity.Warn, `Operator "${ next[1] }" is not supported`);
                 parsed = _sym;
             }
             var _ = parsed && parsed.body;
@@ -287,7 +287,7 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
                 return parse_array_expression(stream, meta);
 
             case "@":
-                Diagnostic(DiagnosticSeverity.Warn, "Decorators are not supported yet!");
+                pushDiagnosticMessage(DiagnosticSeverity.Warn, "Decorators are not supported yet!");
                 break;
             
             case "@@":
@@ -325,6 +325,9 @@ export function parse_expression(stream: import("./utils/stream.js").TokenStream
 /**@type {import("./parser").Node} */
 var __top_fn_node: Node;
 export var diagnostics = [] as IDiagnostic[];
+export function pushDiagnosticMessage(severity: DiagnosticSeverity, message: string) {
+    diagnostics!.push(Diagnostic(severity, message));
+}
 export var promises = [] as Promise<Node[]>[];
 export interface ParserOutput {
     output: Node;
@@ -378,9 +381,9 @@ export function main_parse(stream: TokenStream, filename: string, outer: Node) {
             var _parsed = _parse(next, stream, { outer, filename });
             _parsed && parsed.push(isArray(_parsed) ? _parsed[0] : _parsed);
         } catch (error) {
-            diagnostics.push(Diagnostic(error && typeof error !== "string" && !(error instanceof SyntaxError) ?
+            pushDiagnosticMessage(error && typeof error !== "string" && !(error instanceof SyntaxError) ?
                 DiagnosticSeverity.FatalError :
-                DiagnosticSeverity.Error, error));
+                DiagnosticSeverity.Error, error);
         }
         // } catch (error) {
         //     if (typeof error === "string") {
