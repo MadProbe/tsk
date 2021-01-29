@@ -199,41 +199,7 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
     var _sym: Node;
     var expression__ = expression as ParseNodeType.Expression;
     var type__ = expression__ as ParseNodeType;
-    // @ts-ignore
-    if (next[0] === Tokens.Keyword && !includes(js_auto_variables, next[1])) {
-        assert<Token>(next);
-        return keywordsHandlers[next[1]](stream, meta);
-        // @ts-ignore
-    } else if (next[0] === Tokens.Number) {
-        assert<Token>(next);
-        let _temp = next[1];
-        _sym = {
-            name: Nodes.NumberValue,
-            type: NodeType.Expression,
-            body: _temp
-        };
-        advance_next(stream, expression);
-        return parse_operators(_sym, stream, meta, ParseNodeType.Number);
-        // @ts-ignore
-    } else if (next[0] === Tokens.Range) {
-        assert<Token>(next);
-        var splitted = next[1].split('..');
-        advance_next(stream, expression);
-        return parse_operators({
-            name: Nodes.RangeValue,
-            type: NodeType.Expression,
-            body: splitted.map(v => ({ name: Nodes.StringValue, type: NodeType.Expression, body: v }))
-        }, stream, meta, ParseNodeType.Range);
-        // @ts-ignore
-    } else if (next[0] === Tokens.String) {
-        assert<Token>(next);
-        advance_next(stream, expression);
-        return parse_operators({
-            name: Nodes.StringValue,
-            type: NodeType.Expression,
-            body: next[1]
-        }, stream, meta, ParseNodeType.String);
-    } else if (isNode(next) || isSymbol(next)) {
+    if (isNode(next) || isSymbol(next)) {
         if (isNode(next)) {
             _sym = next;
         } else {
@@ -266,6 +232,36 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
             }, stream, meta, expression__);
         }
         return parse_operators(_sym, stream, meta, type__);
+    } else if (next[0] === Tokens.Keyword) {
+        assert<Token>(next);
+        return keywordsHandlers[next[1]](stream, meta);
+    } else if (next[0] === Tokens.Number) {
+        assert<Token>(next);
+        let _temp = next[1];
+        _sym = {
+            name: Nodes.NumberValue,
+            type: NodeType.Expression,
+            body: _temp
+        };
+        advance_next(stream, expression);
+        return parse_operators(_sym, stream, meta, ParseNodeType.Number);
+    } else if (next[0] === Tokens.Range) {
+        assert<Token>(next);
+        var splitted = next[1].split('..');
+        advance_next(stream, expression);
+        return parse_operators({
+            name: Nodes.RangeValue,
+            type: NodeType.Expression,
+            body: splitted.map(v => ({ name: Nodes.StringValue, type: NodeType.Expression, body: v }))
+        }, stream, meta, ParseNodeType.Range);
+    } else if (next[0] === Tokens.String) {
+        assert<Token>(next);
+        advance_next(stream, expression);
+        return parse_operators({
+            name: Nodes.StringValue,
+            type: NodeType.Expression,
+            body: next[1]
+        }, stream, meta, ParseNodeType.String);
     } else if (next[0] === Tokens.Comment || next[0] === Tokens.MultilineComment || next[0] === Tokens.Whitespace) {
         // return (void next)!;
     } else if (next[0] === Tokens.Special && ~[";", ")", "}", ","].indexOf(next[1])) {
