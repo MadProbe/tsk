@@ -301,6 +301,16 @@ export function __parse(next: Token | Node, stream: TokenStream, meta: ParseMeta
                     type: NodeType.Expression,
                     body: next[1]
                 }, stream, meta, expression__);
+
+            case "-":
+            case "+":
+            case "!":
+                pushDiagnosticMessage(DiagnosticSeverity.Warn, `The operator "${ next[1] }" is not supported!`);
+                break;
+
+
+            default:
+                pushDiagnosticMessage(DiagnosticSeverity.Warn, "?????????");
         }
     }
     return undefined!;
