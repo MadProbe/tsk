@@ -1,7 +1,7 @@
 import { isArray, includes, error_unexcepted_token } from "../utils/util.js";
 import { Nodes, NodeType, AccessChainItemKind, Tokens } from "../enums";
 import { meberAccessOperators, end_expression } from "../utils/constants.js";
-import { __parse, __used, _parse } from "../parser.js";
+import { __parse, __used, _parse } from "../parse-dummies.js";
 import { advance_next, downgrade_next } from "../utils/advancers.js";
 import type { Token, TokenStream } from "../utils/stream.js";
 import type { Node, ParseMeta, AccessChainItem } from "../nodes";

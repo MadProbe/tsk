@@ -1,14 +1,22 @@
 #!/usr/bin/env node
-process.on("unhandledRejection", console.error.bind(console, "Error: "));
 import { writeFileSync } from "fs";
 import { createRequire } from "module";
 import { dirname, extname, join, resolve } from "path";
 import { pathToFileURL } from "url";
-import compile from "../lib/compiler.js";
-import { log_errors } from "../lib/utils/util.js";
+// This file is not here!
+// @ts-ignore
+import compile from "./bundle.min.mjs";
 
 
 (async () => {
+    process.on("unhandledRejection", console.error.bind(console, "Error: "));
+    function log_errors(errors: any[]) {
+        if (errors && errors.length) {
+            for (var index = 0; index < errors.length; index++) {
+                console.error("TSK Error:", errors[index]);
+            }
+        }
+    }
     if (typeof global.require !== "function") {
         global.require = createRequire(import.meta.url);
     }

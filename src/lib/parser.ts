@@ -22,7 +22,7 @@ import { _emit } from "./emitter.js";
 import { _echo } from "./utils/_echo.js";
 import { AssignmentOperatorTable } from "./utils/table.js";
 import { Diagnostic, IDiagnostic } from "./utils/diagnostics.js";
-import { js_auto_variables, end_expression, expression } from "./utils/constants.js";
+import { end_expression, expression } from "./utils/constants.js";
 import { parseMemberAccess } from "./parsers/member-access.js";
 import { advance_next } from "./utils/advancers.js";
 import { parse_call_expression } from "./parsers/call-expression.js";

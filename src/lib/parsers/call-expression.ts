@@ -2,7 +2,7 @@ import { isArray, error_unexcepted_token } from "../utils/util.js";
 import { Nodes, NodeType, Tokens } from "../enums";
 import { end_expression } from "../utils/constants.js";
 import { advance_next } from "../utils/advancers.js";
-import { __parse } from "../parser.js";
+import { __parse } from "../parse-dummies.js";
 import type { Token, TokenStream } from "../utils/stream.js";
 import type { ParseMeta, Node } from "../nodes";
 

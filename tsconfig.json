@@ -22,8 +22,7 @@
         "strict": true,
         "rootDir": "src",
         "outDir": "build/out",
-        "skipDefaultLibCheck": true,
-        "incremental": true
+        "skipDefaultLibCheck": true
     },
     "include": [
         "./src"
