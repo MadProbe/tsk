@@ -1,19 +1,19 @@
-import { Diagnostic, IDiagnostic } from "./utils/diagnostics.js";
-import { DiagnosticSeverity } from "./enums.js";
+import { IDiagnostic } from "./utils/diagnostics.js";
+import { DiagnosticSeverity } from "./enums";
 import { include } from "./utils/util.js";
-import { parse } from "./parser.js";
+import { parse, ParserOutput, pushDiagnostic } from "./parser.js";
 import { emit } from "./emitter.js";
 import { wrap } from "./wrapper.js";
 import { lex } from "./lexer.js";
 
 export interface CompilerOutput {
-    diagnostics: IDiagnostic[];
-    output: string;
+    readonly diagnostics: readonly IDiagnostic[];
+    readonly output: string;
 }
 export interface CompilerOptions {
-    url?: string;
-    pretty?: boolean;
-    cache?: boolean;
+    readonly url?: string;
+    readonly pretty?: boolean;
+    readonly cache?: boolean;
 }
 /**
  * Complies tsk language code and transplies it into js code
@@ -21,18 +21,18 @@ export interface CompilerOptions {
  * @param {import("./compiler").CompilerOptions & { url: string }} opts Options passed to parser
  * @returns {import("./compiler").CompilerOutput | Promise<import("./compiler").CompilerOutput>} js code & diagnostic messages
  */
-export function compileCode(code: string, opts: CompilerOptions & { url: string; }): CompilerOutput | Promise<CompilerOutput> {
-    var parsed = parse(lex(code), opts.url, opts.cache ?? true);
+export function compileCode(code: string, opts: CompilerOptions): CompilerOutput | Promise<CompilerOutput> {
+    var parsed = parse(lex(code), opts.url!, opts.cache ?? true);
     /**@param {import("../parser").ParserOutput} parsed */
-    function _(parsed: import("./parser").ParserOutput) {
+    function _(parsed: ParserOutput) {
         var obj = {
             diagnostics: parsed.diagnostics,
             output: `/*#EMPTY${ Math.random() }*/`
-        } as CompilerOutput;
+        };
         try {
             obj.output = wrap(emit(parsed.output, opts), parsed.__used);
         } catch (error) {
-            obj.diagnostics.push(Diagnostic(DiagnosticSeverity.FatalError, error));
+            pushDiagnostic(DiagnosticSeverity.FatalError, error as never);
         }
         return obj;
     }
@@ -47,7 +47,7 @@ export function compileCode(code: string, opts: CompilerOptions & { url: string;
 export default function compile(url: string | URL | import("url").URL, opts?: CompilerOptions): CompilerOutput | Promise<CompilerOutput> {
     var included = include(typeof url === "string" ? new URL(url) : url);
     opts ||= {};
-    opts.url ||= url.toString();
+    (opts as Record<string, unknown>).url ||= url.toString();
     if (typeof included === "string") {
         return compileCode(included, opts as CompilerOptions & { url: string; });
     } else return included.then(included => compileCode(included, opts as CompilerOptions & { url: string; }));
@@ -61,32 +61,32 @@ export type {
     SyntaxTree 
 } from "./parser";
 export type {
-    AccessChainItem,
-    ClassNode,
+    AccessChainItem as AccessChainItem,
+    IClassNode,
     ClassConstructor,
     ClassNodeProps,
     ClassProperty,
     ClassGetter,
     ClassSetter,
     ClassMethod,
-    Node,
-    NodeBase,
+    INode,
+    INodeBase,
     NodeName,
-    TryStatmentNode,
-    UsingStatmentNode,
+    ITryStatmentNode,
+    IUsingStatmentNode,
     MixinNode,
-    ParameterNode
+    IParameterNode as ParameterNode
 } from "./nodes";
 export type {
     AccessChainItemKind,
     Scopes,
     DiagnosticSeverity,
-    ParameterNodeType,
+    ParameterNodeKind,
     NodeType,
     Nodes,
     Tokens,
-    FNNodeType,
-    ParseNodeType
+    FunctionNodeKind,
+    ParseNodeKind
 } from "./enums";
 export type {
     ArrayValueType

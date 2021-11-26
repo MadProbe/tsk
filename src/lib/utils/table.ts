@@ -1,10 +1,8 @@
 import { Nodes } from "../enums";
 
-export type CommonOperatorTableType = typeof CommonOperatorTable;
-export type CommonOperatorTableKeys = keyof CommonOperatorTableType;
-export type AssignmentOperatorTableType = typeof AssignmentOperatorTable;
-export type AssignmentOperatorTableKeys = keyof AssignmentOperatorTableType;
-export var CommonOperatorTable = {
+export type CommonOperatorTableKeys = keyof typeof CommonOperatorTable;
+export type AssignmentOperatorTableKeys = keyof typeof AssignmentOperatorTable;
+export const CommonOperatorTable = {
     "+": Nodes.AddictionExpression,
     "-": Nodes.SubstractionExpression,
     "*": Nodes.MultiplicationExpression,
@@ -17,6 +15,8 @@ export var CommonOperatorTable = {
     "??": Nodes.NullishCoalescingExpression,
     "&&": Nodes.LogicalANDExpression,
     "||": Nodes.LogicalORExpression,
+    "or": Nodes.LogicalORExpression,
+    "and": Nodes.LogicalANDExpression,
     // "!": Nodes.LogicalNOTExpresssion, // Leaving this uncommented may lead to fun bugs 
     // expression ! expression will be parsed without compilation errors LOL
     "<<": Nodes.BitwiseLeftShiftExpression,
@@ -31,7 +31,7 @@ export var CommonOperatorTable = {
     "===": Nodes.StrictComparison,
     "!=": Nodes.LooseNegativeComparison,
     "!==": Nodes.StrictNegativeComparison
-}
+} as const;
 export var AssignmentOperatorTable = {
     "=": Nodes.AssignmentExpression,
     "+=": Nodes.AddictionAssignmentExpression,

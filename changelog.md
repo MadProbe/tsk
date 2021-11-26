@@ -1,3 +1,61 @@
+# Version 0.3.0
+## New Features
+
+### Word aliases for binary ariphmetic
+```ts
+not true;
+not 0 + 1;
+true and false;
+false or true;
+```
+transforms to:
+```ts
+!true;
+!(0 + 1);
+true && false;
+false || true;
+```
+
+### Symbol constructor property shortcuts
+```ts
+iterator = [0, 1, 2, 3, 4][@@iterator]();
+while (not (next = iterator.next()).done) {
+    __external_var("console").log(next.value);
+}
+
+/**
+ * Prints to console:
+ * 0
+ * 1
+ * 2
+ * 3
+ * 4
+ */
+```
+transforms to:
+```js
+var $iterator, $next;
+$iterator = [0, 1, 2, 3, 4][Symbol.iterator]();
+while (!(($next = $iterator.next())).done) {
+    console.log($next.value);
+};
+```
+
+### include { symbol } from "module.tsk";
+Same as normal `include "module.tsk";`, except only some symbols from module are exported.  
+NOTE: WHOLE module is evaluated and NO functionality is stripped and ALL symbols (variables and functions) in module available to exported symbols!  
+Exmaples:
+```ts
+include { symbol, function } from "module.tsk";
+include { symbol as newSymbolName } from "module.tsk";
+```
+
+### Import expressions
+```ts
+// Import expression are same as in js
+fs = await import("fs");
+```
+
 # Version 0.2.0
 ## Bug fixes
 Removed Extra newline emitted on code block and try statment.  

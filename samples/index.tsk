@@ -1,10 +1,13 @@
+#!/usr/bin/env -S tskc --pretty --out=../build
+"use strict";
 // Include statment includes code from specified file
-include "./example-module.tsk";
+// include "./example-module.tsk";
 [1, 2, 3];
 // variable declarations
 a = 2;
 b = 4;
 c = 6;
+テスト = 2;
 // __external_var is for exposing external variable 
 // (also can be used for executing statments that are implented in js but not yet in tsk)
 Function = __external_var("Function");
@@ -69,7 +72,8 @@ lol?.null?.dsa?.[2].p;
 fn p() {
     return arguments;
 }
-p::(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+p::(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)?.p;
+(p::(null));
 async fn _temp() => {
     await 0;
     console.log(1);
@@ -117,9 +121,15 @@ restTest2(1, 2, 3);
 restTest3(1, 2, 3);
 restTest4(1, 2, 3);
 restTest5(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-class A extends leel with echo {
-    
-}
+// class A extends leel with echo {
+//     static a = 0;
+//     async constructor(public name, public descriptions) {
+//         console.log(class.a);
+//     }
+//     async static class() {
+//         return class.a;
+//     }
+// }
 try {
     null!;
 } catch (e) {
@@ -132,7 +142,7 @@ try {
 }
 try {
     0;
-} catch (cought) {
+} catch (caught) {
     1;
 } else {
     2;
@@ -143,7 +153,6 @@ try {
     try { } finally { }
     try { } else {  }
     try { } catch { }
-    try { }
 }
 i = 0;
 while (i < 10) {
@@ -157,7 +166,7 @@ fn test__() {
         return "Hello from else block!";
     }
 }
-__external_var("console").log(test__()); // Prints "Hello from try block!"
+console.log(test__()); // Prints "Hello from try block!"
 try {
     try {
         console.log("inner try");
@@ -172,9 +181,24 @@ try {
         console.log("inner finally");
     }
 } catch (error) {
-    console.error("outer", error);
+    console.log("outer", error);
 }
-console.log("$$$".replace(__external_var("/\$?/g"), "()"));
-(fn () {}, fn() {})()
+console.log("$$$".replace(/\$?/g,"()"));
+(fn () {}, fn() {})();
+(fn () {
+    iterator = (0..6)[@@iterator]();
+    while (not (next = iterator.next()).done) {
+        console.log(next.value);
+    }
+})();
+(1 + 1 ** 1 + 1);
+
+for range (0 to 5 as i) {
+    console.log("i:", i);
+}
+if (1) {} else 0xff;
+((fn () => fn () {})()()?.p);
+// 0 or 1;
+// / /;
 //;~;
 ;

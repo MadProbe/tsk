@@ -1,13 +1,7 @@
-import type { DiagnosticSeverity } from "../enums.js";
+import type { DiagnosticSeverity } from "../enums";
 
 
 export interface IDiagnostic {
-    severity: DiagnosticSeverity;
-    message: string;
-}
-export function Diagnostic(severity: DiagnosticSeverity, message: string): IDiagnostic {
-    return {
-        severity,
-        message
-    };
+    readonly severity: DiagnosticSeverity;
+    readonly message: string;
 }

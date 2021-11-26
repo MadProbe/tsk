@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "target": "es3",
+        "target": "ES2021",
         "lib": [
             "dom",
             "dom.iterable",
@@ -18,13 +18,18 @@
         "moduleResolution": "node",
         "preserveConstEnums": true,
         "declaration": true,
+        "declarationDir": "./build/decls",
         "pretty": true,
         "strict": true,
         "rootDir": "src",
-        "outDir": "build/out",
-        "skipDefaultLibCheck": true
+        "outDir": "./build",
+        "skipDefaultLibCheck": true,
+        "sourceMap": true,
+        "composite": true,
+        "tsBuildInfoFile": ".tsbuildinfo",
+        "incremental": true
     },
     "include": [
-        "./src"
+        "./src/lib"
     ]
 }

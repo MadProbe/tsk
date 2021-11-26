@@ -1,13 +1,12 @@
-// rollup.config.js
-import typescript from '@rollup/plugin-typescript';
-import { getBabelOutputPlugin } from '@rollup/plugin-babel';
-import { readFileSync } from "fs";
+import typescript from 'rollup-plugin-typescript2';
+import { terser } from 'rollup-plugin-terser';
 
 
+const plugin_terser = terser({ format: { comments: false }, mangle: true, compress: true });
 export default {
     onwarn(warning) {
         if (warning.code !== 'CIRCULAR_DEPENDENCY') {
-            console.error(`(!) ${ warning.message }`);
+            console.error(`(!) ${warning.message}`);
         }
     },
     input: 'src/lib/compiler.ts',
@@ -36,32 +35,23 @@ export default {
                 exports: "named",
                 format: 'iife',
                 sourcemap: true,
-                plugins: [getBabelOutputPlugin({
-                    allowAllFormats: true,
-                    ...JSON.parse(readFileSync('./.babelrc', "utf-8"))
-                })],
+                plugins: [plugin_terser],
             }, {
                 file: './build/bundle.min.mjs',
                 format: 'esm',
                 sourcemap: true,
-                plugins: [getBabelOutputPlugin({
-                    allowAllFormats: true,
-                    ...JSON.parse(readFileSync('./.babelrc', "utf-8"))
-                })],
+                plugins: [plugin_terser],
             }, {
                 file: './build/bundle.min.cjs',
                 exports: "named",
                 format: 'cjs',
                 sourcemap: true,
-                plugins: [getBabelOutputPlugin({
-                    allowAllFormats: true,
-                    ...JSON.parse(readFileSync('./.babelrc', "utf-8"))
-                })],
+                plugins: [plugin_terser],
             }
         ] : [])
 
     ],
     plugins: [
-        typescript()
+        typescript({ useTsconfigDeclarationDir: true })
     ]
 };

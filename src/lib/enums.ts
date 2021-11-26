@@ -100,15 +100,21 @@ export const enum Nodes {
     StrictNegativeComparison,
     ImportExpression,
     NamedIncludeStatment,
-    SymbolShortcut
+    SymbolShortcut,
+    ObjectExpression,
+    Decorator,
+    ForRangeStatment,
+    ForOfStatment,
+    RegularExpression,
+    Shebang
 }
-export const enum FNNodeType {
+export const enum FunctionNodeKind {
     Sync,
     Generator,
     Async,
     AsyncGenerator
 }
-export const enum ParameterNodeType {
+export const enum ParameterNodeKind {
     Normal,
     Rest,
     Empty,
@@ -119,7 +125,8 @@ export const enum ParameterNodeType {
  */
 export const enum NodeType {
     Statment,
-    Expression
+    Expression,
+    Ephemerial
 }
 export const enum Scopes {
     Sync,
@@ -137,17 +144,15 @@ export const enum AccessChainItemKind {
     ComputedNullAsserted
 }
 export const enum Tokens {
-    String,
-    Number,
-    Symbol,
-    Operator,
-    Special,
-    Regex,
-    Whitespace,
-    Comment,
-    Keyword,
-    Range,
-    MultilineComment
+    String = 0x0000001,
+    Number = 0x0000002,
+    Symbol = 0x0000004,
+    Operator = 0x00000008,
+    Whitespace = 0x00000010,
+    Comment = 0x00000020,
+    MultilineComment = 0x00000040,
+    Keyword = 0x00000080,
+    Range = 0x00000100
 }
 export const enum DiagnosticSeverity {
     Info,
@@ -156,10 +161,16 @@ export const enum DiagnosticSeverity {
     Error,
     FatalError
 }
-export const enum ParseNodeType {
+export const enum ParseNodeKind {
     Expression = "expression",
     String = "string",
     Number = "number",
     Range = "range",
     Indentifier = "indentifier"
+}
+export const enum ObjectBodyNodeKind {
+    Normal,
+    Setter,
+    Getter,
+    Rest
 }

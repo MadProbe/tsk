@@ -3,6 +3,6 @@
 build
 index.js
 index.html
-server.js
 node_modules
 *.tgz
+*.7z

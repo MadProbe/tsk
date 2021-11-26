@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "target": "esnext",
+        "module": "esnext",
+        "moduleResolution": "node",
+        "pretty": true,
+        "strict": true,
+        "outDir": "../../build",
+        "skipLibCheck": true
+    },
+    "include": ["../../build/*", "tskc.mts"],
+    "exclude": []
+}

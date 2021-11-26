@@ -1,103 +1,63 @@
-import { isArray, includes, error_unexcepted_token } from "../utils/util.js";
-import { Nodes, NodeType, AccessChainItemKind, Tokens } from "../enums";
+import { includes } from "../utils/util.js";
+import { Nodes, NodeType, AccessChainItemKind, Tokens, ParseNodeKind } from "../enums";
 import { meberAccessOperators, end_expression } from "../utils/constants.js";
-import { __parse, __used, _parse } from "../parse-dummies.js";
-import { advance_next, downgrade_next } from "../utils/advancers.js";
+import { __parse, __used, _parse, parse_operators } from "../parser.js";
+import { advance_next, except_next_token } from "../utils/advancers.js";
 import type { Token, TokenStream } from "../utils/stream.js";
-import type { Node, ParseMeta, AccessChainItem } from "../nodes";
+import { INode, IParseMeta, AccessChainItem } from "../nodes";
 
-export function _parseMemberAccess(sym: Node, next: Token, stream: TokenStream, meta: ParseMeta) {
-    var chain = [{
-        kind: AccessChainItemKind.Head,
-        body: sym
-    }] as AccessChainItem[];
-    while (next[0] === Tokens.Operator && includes(meberAccessOperators, next[1])) {
-        if (next[1] === ".") {
-            next = advance_next(stream, "symbol");
-            if (next[0] !== Tokens.Symbol && next[0] !== Tokens.Keyword) {
-                error_unexcepted_token(next);
-            }
-            chain.push({
-                kind: AccessChainItemKind.Normal,
-                body: { name: Nodes.SymbolNoPrefix, type: NodeType.Expression, symbolName: next[1] }
-            });
-        } else if (next[1] === "[") {
+export function _parseMemberAccess(sym: INode, next: Token, stream: TokenStream, meta: IParseMeta) {
+    var chain: AccessChainItem[] = [new AccessChainItem(AccessChainItemKind.Head, sym)];
+    while (next.type === Tokens.Operator && includes(meberAccessOperators, next.body)) {
+        stream.confirm_try();
+        if (next.body === ".") {
+            chain.push(new AccessChainItem(AccessChainItemKind.Normal, {
+                name: Nodes.SymbolNoPrefix,
+                type: NodeType.Expression,
+                symbol: except_next_token(stream, Tokens.Symbol | Tokens.Keyword).body
+            }));
+        } else if (next.body === "[") {
             var parsed = __parse(advance_next(stream, end_expression), stream, meta);
-            if (isArray(parsed)) {
-                next = stream.next;
-                parsed = parsed[0];
-            } else {
-                next = advance_next(stream, "]");
-            }
-            if (next[0] !== Tokens.Operator || next[1] !== "]") {
-                error_unexcepted_token(next);
-            }
-            chain.push({
-                kind: AccessChainItemKind.Computed,
-                body: parsed
-            });
-        } else if (next[1] === "?.") {
-            next = advance_next(stream, "symbol");
-            if (next[0] !== Tokens.Symbol && next[0] !== Tokens.Keyword) {
-                error_unexcepted_token(next);
-            }
-            chain.push({
-                kind: AccessChainItemKind.Optional,
-                body: { name: Nodes.SymbolNoPrefix, type: NodeType.Expression, symbolName: next[1] }
-            });
-        } else if (next[1] === "?.[") {
+            except_next_token(stream, Tokens.Operator, "]");
+            chain.push(new AccessChainItem(AccessChainItemKind.Computed, parsed));
+        } else if (next.body === "?.") {
+            chain.push(new AccessChainItem(AccessChainItemKind.Optional, {
+                name: Nodes.SymbolNoPrefix,
+                type: NodeType.Expression,
+                symbol: except_next_token(stream, Tokens.Symbol | Tokens.Keyword).body
+            }));
+        } else if (next.body === "?.[") {
             var parsed = __parse(advance_next(stream, end_expression), stream, meta);
-            if (isArray(parsed)) {
-                next = stream.next;
-                parsed = parsed[0];
-            } else {
-                next = advance_next(stream, "]");
-            }
-            if (next[0] !== Tokens.Operator || next[1] !== "]") {
-                error_unexcepted_token(next);
-            }
-            chain.push({
-                kind: AccessChainItemKind.OptionalComputed,
-                body: parsed
-            });
-        } else if (next[1] === "!.") {
-            next = advance_next(stream, "symbol");
-            if (next[0] !== Tokens.Symbol && next[0] !== Tokens.Keyword) {
-                error_unexcepted_token(next);
-            }
+            except_next_token(stream, Tokens.Operator, "]");
+            chain.push(new AccessChainItem(AccessChainItemKind.OptionalComputed, parsed));
+        } else if (next.body === "!.") {
             __used.na = true;
-            chain.push({
-                kind: AccessChainItemKind.NormalNullAsserted,
-                body: { name: Nodes.SymbolNoPrefix, type: NodeType.Expression, symbolName: next[1] }
-            });
-        } else if (next[1] === "![") {
+            chain.push(new AccessChainItem(AccessChainItemKind.NormalNullAsserted, {
+                name: Nodes.SymbolNoPrefix,
+                type: NodeType.Expression,
+                symbol: except_next_token(stream, Tokens.Symbol | Tokens.Keyword).body
+            }));
+        } else if (next.body === "!.[") {
             var parsed = __parse(advance_next(stream, end_expression), stream, meta);
-            if (isArray(parsed)) {
-                next = stream.next;
-                parsed = parsed[0];
-            } else {
-                next = advance_next(stream, "]");
-            }
-            if (next[0] !== Tokens.Operator || next[1] !== "]") {
-                error_unexcepted_token(next);
-            }
+            except_next_token(stream, Tokens.Operator, "]");
             __used.na = true;
-            chain.push({
-                kind: AccessChainItemKind.ComputedNullAsserted,
-                body: parsed
-            });
+            chain.push(new AccessChainItem(AccessChainItemKind.ComputedNullAsserted, parsed));
         } else {
             break;
         }
-        next = advance_next(stream, "any");
+        try {
+            next = stream.try("operator");
+        } catch {
+            break;
+        }
     }
-    downgrade_next(stream);
+    stream.cancel_try();
     return chain;
 }
-export function parseMemberAccess(sym: Node, next: Token, stream: TokenStream, meta: ParseMeta) {
-    return _parse({
+export function parseMemberAccess(sym: INode, next: Token, stream: TokenStream, meta: IParseMeta) {
+    return parse_operators({
         name: Nodes.MemberAccessExpression,
         type: NodeType.Expression,
         body: _parseMemberAccess(sym, next, stream, meta),
-    }, stream, meta);
+    }, stream, meta, ParseNodeKind.Expression);
 }
