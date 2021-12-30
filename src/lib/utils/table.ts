@@ -1,5 +1,6 @@
 import { Nodes } from "../enums";
 
+
 export type CommonOperatorTableKeys = keyof typeof CommonOperatorTable;
 export type AssignmentOperatorTableKeys = keyof typeof AssignmentOperatorTable;
 export const CommonOperatorTable = {

@@ -6,12 +6,11 @@ import { parse_operators, __parse } from "../parser.js";
 import type { Token, TokenStream } from "../utils/stream.js";
 import type { INode, IParseMeta } from "../nodes.js";
 
+
 export function parse_group_expression(stream: TokenStream, meta: IParseMeta) {
-    var prefix = "Group expression:" as const,
-        next: Token,
-        body: INode[] = [],
-        node: INode = { name: Nodes.GroupExpression, type: NodeType.Expression, body },
-        parsed: INode;
+    const prefix = "Group expression:", body: INode[] = [],
+        node: INode = { name: Nodes.GroupExpression, type: NodeType.Expression, body };
+    var next: Token, parsed: INode;
     while (next = advance_next(stream, end_expression, prefix), next.type !== Tokens.Operator || next.body !== ")") {
         parsed = __parse(next, stream, meta);
         next = advance_next(stream, end_expression, prefix);

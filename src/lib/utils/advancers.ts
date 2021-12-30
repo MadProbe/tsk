@@ -2,6 +2,7 @@ import { except_token } from "./util.js";
 import type { Tokens } from "../enums";
 import type { TokenStream } from "./stream.js";
 
+
 export function advance_next<P extends string>(stream: TokenStream, end: string, prefix?: Prefix<P>) {
     const next = stream.advance();
     if (!next) throw `${ prefix ? `${ prefix } ` : "" }Unexcepted EOF - '${ end }' excepted`;

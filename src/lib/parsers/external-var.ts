@@ -4,6 +4,7 @@ import { undefined } from "../utils/util.js";
 import type { INode } from "../nodes.js";
 import type { TokenStream } from "../utils/stream.js";
 
+
 export function __external_var_creator(type: NodeType) {
     return function __external_var(stream: TokenStream): INode {
         const prefix = `External variable expression:`;

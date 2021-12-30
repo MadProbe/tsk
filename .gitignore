@@ -6,3 +6,4 @@ index.html
 node_modules
 *.tgz
 *.7z
+test-perf.mjs

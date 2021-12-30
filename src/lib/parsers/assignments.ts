@@ -6,10 +6,11 @@ import { pushDiagnostic, _parse } from "../parser.js";
 import type { Token, TokenStream } from "../utils/stream.js";
 import type { INode, IParseMeta, AccessChainItem } from "../nodes";
 
+
 export function parse_assignment(_sym: INode, next: Token, stream: TokenStream, meta: IParseMeta): INode | undefined {
     if (name = AssignmentOperatorTable[next.body as AssignmentOperatorTableKeys] as Nodes | undefined) {
         if (_sym.name === Nodes.MemberAccessExpression) {
-            var body = _sym.body as AccessChainItem[];
+            const body = _sym.body as AccessChainItem[];
             var name: Nodes | undefined, parsed: INode, node: INode;
             for (var index = 0; index < body.length; index++) {
                 const item = body[index];

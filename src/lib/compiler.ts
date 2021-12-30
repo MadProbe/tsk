@@ -6,14 +6,16 @@ import { emit } from "./emitter.js";
 import { wrap } from "./wrapper.js";
 import { lex } from "./lexer.js";
 
+
 export interface CompilerOutput {
     readonly diagnostics: readonly IDiagnostic[];
     readonly output: string;
 }
 export interface CompilerOptions {
-    readonly url?: string;
-    readonly pretty?: boolean;
     readonly cache?: boolean;
+    readonly forgetShebang?: boolean;
+    readonly pretty?: boolean;
+    readonly url?: string;
 }
 /**
  * Complies tsk language code and transplies it into js code
@@ -24,13 +26,13 @@ export interface CompilerOptions {
 export function compileCode(code: string, opts: CompilerOptions): CompilerOutput | Promise<CompilerOutput> {
     var parsed = parse(lex(code), opts.url!, opts.cache ?? true);
     /**@param {import("../parser").ParserOutput} parsed */
-    function _(parsed: ParserOutput) {
+    function _({ diagnostics, __used, output }: ParserOutput) {
         var obj = {
-            diagnostics: parsed.diagnostics,
+            diagnostics,
             output: `/*#EMPTY${ Math.random() }*/`
         };
         try {
-            obj.output = wrap(emit(parsed.output, opts), parsed.__used);
+            obj.output = wrap(emit(output, opts), __used);
         } catch (error) {
             pushDiagnostic(DiagnosticSeverity.FatalError, error as never);
         }
@@ -61,7 +63,7 @@ export type {
     SyntaxTree 
 } from "./parser";
 export type {
-    AccessChainItem as AccessChainItem,
+    AccessChainItem,
     IClassNode,
     ClassConstructor,
     ClassNodeProps,
@@ -75,7 +77,7 @@ export type {
     ITryStatmentNode,
     IUsingStatmentNode,
     MixinNode,
-    IParameterNode as ParameterNode
+    IParameterNode
 } from "./nodes";
 export type {
     AccessChainItemKind,

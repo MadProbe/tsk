@@ -6,6 +6,7 @@ import { __parse } from "../parser.js";
 import type { Token, TokenStream } from "../utils/stream.js";
 import type { IParseMeta, INode } from "../nodes";
 
+
 export function parse_call_expression(next: Token, stream: TokenStream, meta: IParseMeta): INode[] {
     const args: INode[] = [];
     if (next.type !== Tokens.Operator || next.body !== ")") {

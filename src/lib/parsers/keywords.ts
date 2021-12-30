@@ -5,7 +5,7 @@ import {
 import { _echo } from "../utils/_echo.js";
 import { FunctionNodeKind, Nodes, ParameterNodeKind, NodeType, AccessChainItemKind, Tokens, DiagnosticSeverity } from "../enums";
 import { lex } from "../lexer.js";
-import { meberAccessOperators, end_expression } from "../utils/constants.js";
+import { memberAccessOperators, end_expression } from "../utils/constants.js";
 import { _parseMemberAccess } from "./member-access.js";
 import { advance_next, except_next_token } from "../utils/advancers.js";
 import { parse_body, parse_next_body } from "./body-parser.js";
@@ -15,8 +15,9 @@ import { parse_call_expression } from "./call-expression.js";
 import { type IParseMeta, type INode, type IParameterNode, type IClassNode, type AccessChainItem, type IUsingStatmentNode, ParseMeta, ParameterNode } from "../nodes";
 import type { TokenStream } from "../utils/stream.js";
 
+
 type KeywordParsers = Readonly<Record<string, (stream: TokenStream, meta: IParseMeta, ...args: readonly unknown[]) => Readonly<INode>>>;
-export var keywords_handlers = {
+export const keywords_handlers = {
     /**
      * @param {import("./utils/stream.js").TokenStream} stream
      * @param {import("./parser").ParseMeta} meta
@@ -255,7 +256,7 @@ export var keywords_handlers = {
             locals: [],
             nonlocals: []
         };
-        const innerMeta: IParseMeta = new ParseMeta(meta.filename, node, meta.cache);
+        const innerMeta = new ParseMeta(meta.filename, node, meta.cache);
         for (; ;) {
             paramType = ParameterNodeKind.Normal;
             next = advance_next(stream, "symbol", prefix);
@@ -416,8 +417,7 @@ export var keywords_handlers = {
         if (next.type === Tokens.Operator && next.body === ".") {
             next = advance_next(stream, ['any', 'all', 'allSettled', 'race'].join('" | "'), prefix);
             if (next.type === Tokens.Symbol && /^(any|all(Settled)?|race)$/m.test(next.body)) {
-                var expression = _parse(advance_next(stream, end_expression, prefix), stream, meta);
-                var _: INode = {
+                var expression: INode = {
                     name: Nodes.CallExpression,
                     type: NodeType.Expression,
                     body: [{
@@ -425,9 +425,8 @@ export var keywords_handlers = {
                         type: NodeType.Expression,
                         symbol: `p.${ next.body }`
                     }],
-                    args: [expression as never]
+                    args: [_parse(advance_next(stream, end_expression, prefix), stream, meta)]
                 };
-                expression = _;
             } else {
                 error_unexcepted_token(next);
             }
@@ -438,7 +437,7 @@ export var keywords_handlers = {
             name: Nodes.AwaitExpression,
             type: NodeType.Expression,
             outerBody: meta.outer,
-            body: [expression as never]
+            body: [expression]
         };
     },
     this() {
@@ -472,8 +471,8 @@ export var keywords_handlers = {
                     if (!(isConstantObject || next.type === Tokens.Symbol)) {
                         error_unexcepted_token(next);
                     }
-                    next2 = advance_next(stream, [',', ')'].join('" | "') + meberAccessOperators.join('" | "'), prefix);
-                    if (next2.type === Tokens.Operator && includes(meberAccessOperators, next2.body)) {
+                    next2 = advance_next(stream, [',', ')'].join('" | "') + memberAccessOperators.join('" | "'), prefix);
+                    if (next2.type === Tokens.Operator && includes(memberAccessOperators, next2.body)) {
                         arg = {
                             name: Nodes.MemberAccessExpression,
                             type: NodeType.Expression,
@@ -535,7 +534,7 @@ export var keywords_handlers = {
     },
     // TODO
     try(stream, meta) {
-        const node = {
+        const node: Partial<IUsingStatmentNode> = {
             name: Nodes.TryStatment,
             type: NodeType.Statment,
             catch: null!,
@@ -544,7 +543,7 @@ export var keywords_handlers = {
             finally: null!,
             args: null!,
             outerBody: meta.outer
-        } as Partial<IUsingStatmentNode>;
+        };
         var prefix: `Try${"" | "-Using"} statment:` = "Try statment:",
             next = advance_next(stream, end_expression, prefix), nonuseless = true;
         if (next.type === Tokens.Keyword && next.body === "using") {
@@ -622,7 +621,7 @@ export var keywords_handlers = {
         return {
             name: Nodes.ImportExpression,
             type: NodeType.Expression,
-            args: parse_call_expression(advance_next(stream, end_expression, "Import statment:"), stream, meta)
+            body: parse_call_expression(advance_next(stream, end_expression, "Import statment:"), stream, meta)
         };
     },
     for(stream, meta) {

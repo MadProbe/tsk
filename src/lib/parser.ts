@@ -294,7 +294,7 @@ export function parse_expression<P extends string>(stream: import("./utils/strea
 }
 
 export function _parse_and_assert_last_token<P extends string>(stream: TokenStream, meta: IParseMeta, token_type: Tokens, token_string?: string, prefix?: Prefix<P>, parse: typeof __parse = _parse) {
-    var arg: INode | [INode], next: Token;
+    var arg: INode;
     arg = parse(advance_next(stream, end_expression, prefix), stream, meta);
     except_next_token(stream, token_type, token_string);
     return arg;
@@ -307,18 +307,18 @@ export const diagnostics: readonly IDiagnostic[] = [];
 export class Diagnostic implements IDiagnostic {
     public readonly line: number;
     public readonly column: number;
-    constructor(public readonly severity: DiagnosticSeverity, public readonly message: string, { text_stream }: TokenStream = {} as never) {
+    constructor(public readonly severity: DiagnosticSeverity, public readonly message: string, { text_stream }: Partial<TokenStream> = {}) {
         const text = text_stream?.text.slice(0, text_stream.index);
         this.line = text ? occurrences(text, '\n') + 1 : '?' as never;
-        this.column = text ? text_stream?.index - text?.lastIndexOf('\n') : '?' as never;
+        this.column = text ? text_stream?.index! - text?.lastIndexOf('\n') : '?' as never;
     }
     log() {
-        const level = (["Info", "Warn", "RuntimeError", "Error", "FatalError"] as Array<keyof typeof DiagnosticSeverity>)[this.severity];
+        const level = (["Info", "Warn", "RuntimeError", "Error", "FatalError"] as const)[this.severity];
         console.log(`Diagnostic[Level: ${ level }, Line: ${ this.line }, Column: ${ this.column }]:`, this.message);
     }
 }
 export function pushDiagnostic(severity: DiagnosticSeverity, message: string, stream?: TokenStream, _diagnostics: readonly IDiagnostic[] = diagnostics) {
-    (diagnostics as IDiagnostic[]).push(new Diagnostic(severity, message, stream));
+    (_diagnostics as IDiagnostic[]).push(new Diagnostic(severity, message, stream));
 }
 export var promises: Promise<SyntaxTree>[] = [];
 export interface ParserOutput {
@@ -363,8 +363,7 @@ export function main_parse(stream: TokenStream, filename: string, outer: INode, 
     const parsed: INode[] = [], meta = new ParseMeta(filename, outer, cache, insideExpression);
     var next: Token;
     parse_shebang(stream, outer);
-    stream.move();
-    while (!nullish(next = stream.next)) {
+    while (!nullish(next = stream.advance())) {
         // try {
         // var newlines = occurrences(next[1], '\n');
         // var __line_cache = __line += newlines;
@@ -390,7 +389,6 @@ export function main_parse(stream: TokenStream, filename: string, outer: INode, 
         //         throw error;
         //     }
         // }
-        stream.move();
     }
     return parsed;
 }
@@ -403,7 +401,7 @@ function parse_shebang({ text_stream }: TokenStream, outer: INode) {
                 text += next;
             }
         } else text_stream.down(2);
-    } else text_stream.down();
+    } else text_stream.down(1);
     if (__top_fn_node === outer)
         __top_fn_node.meta!.shebang = text;
 }

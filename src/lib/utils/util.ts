@@ -6,10 +6,10 @@ import type { INode } from "../nodes";
 export type CallFunctionType = <T extends (...args: any[]) => void>(func: T, thisArg: ThisParameterType<T> | undefined, ...args: Parameters<T>) => ReturnType<T>;
 export type ApplyFunctionType = <T extends (...args: any[]) => void>(func: T, thisArg: ThisParameterType<T> | undefined, args: Parameters<T> | IArguments) => ReturnType<T>;
 export type BindFunctionType = <T extends (...args: any[]) => void>(func: T, thisArg: ThisParameterType<T> | undefined, ...args: Parameters<T> | undefined[]) => T;
-var __call = nullish.call;
-export var bind = __call.bind(nullish.bind) as BindFunctionType;
-export var call = bind(__call, __call as any) as CallFunctionType;
-export var apply = bind(__call, nullish.apply as any) as ApplyFunctionType;
+const __call = nullish.call;
+export const bind = __call.bind(nullish.bind) as BindFunctionType;
+export const call = bind(__call, __call as any) as CallFunctionType;
+export const apply = bind(__call, nullish.apply as any) as ApplyFunctionType;
 export type ArrayValueType<T extends readonly any[]> = {
     [key in Exclude<keyof T, keyof []>]: T[key];
 } extends { [key: string]: infer V; } ? V : never;
@@ -29,9 +29,9 @@ export function resetCounter() {
     __counter__ = 0;
 }
 export function assert_type<T>(value: unknown): asserts value is T { }
-export var isArray = Array.isArray as (<T>(arg: any) => arg is T[]) || (function (value) {
+export const isArray: <T>(arg: any) => arg is T[] = Array.isArray || function (value) {
     return value instanceof Array;
-});
+};
 interface CacheEntry {
     code: string;
     mtime: number;
@@ -65,7 +65,10 @@ export function include(path: URL, cache = true): string | Promise<string> {
     } else if (protocol === "http:" || protocol === "https:") {
         if (typeof fetch === "undefined") {
             if (__is_node) {
-                global.fetch = require('node-fetch')["default"];
+                if (typeof require !== "function") {
+                    throw "Please expose 'require' function into the global scope in order to use include statment";
+                }
+                global.fetch = require('node-fetch').default;
             } else {
                 throw "Fetching web resource with no fetch function attached to global in web env!";
             }
@@ -76,7 +79,7 @@ export function include(path: URL, cache = true): string | Promise<string> {
         // }
         return fetch(path.href).then(function (responce) {
             if (!responce.ok) {
-                throw "Something went wrong while fetching " + path + "!";
+                throw `Something went wrong while fetching ${ path }!`;
             }
             return responce.text();
         });

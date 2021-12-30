@@ -6,10 +6,11 @@ import { parse_operators, _parse, __parse } from "../parser.js";
 import type { INode, IParseMeta } from "../nodes";
 import type { Token, TokenStream } from "../utils/stream.js";
 
+
 export function parse_array_expression(stream: TokenStream, meta: IParseMeta) {
-    var body: INode[] = [];
+    const body: INode[] = [];
     /**@type {import("./parser").Node}*/
-    var node: INode = {
+    const node: INode = {
         name: Nodes.Array,
         type: NodeType.Expression,
         body

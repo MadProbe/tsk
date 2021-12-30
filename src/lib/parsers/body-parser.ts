@@ -4,12 +4,14 @@ import { _parse, pushDiagnostic } from "../parser.js";
 import type { IParseMeta, INode } from "../nodes";
 import type { Token, TokenStream } from "../utils/stream.js";
 
+
 /**
  * @param {import("./utils/stream.js").TokenStream} stream
  * @param {import("./parser").ParseMeta} meta
  */
 export function parse_body<P extends string>(stream: TokenStream, meta: IParseMeta, prefix?: Prefix<P>): INode[] {
-    var next: Token = advance_next(stream, "}", prefix), nodes: INode[] = [];
+    var next: Token = advance_next(stream, "}", prefix);
+    const nodes: INode[] = [];
     //console.log(1123124);
     while ((next /*, console.log("next:", next), next*/).type !== Tokens.Operator || next.body !== "}") {
         // console.log(next);

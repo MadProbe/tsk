@@ -1,10 +1,10 @@
 import { Nodes, NodeType } from "../enums";
 import { TokenStream } from "../utils/stream.js";
 import { undefined } from "../utils/util.js";
-import { symbolicCharsRegex } from "../lexer.js";
 import type { INode } from "../nodes.js";
 
 
+const symbolicCharsRegex = /^[^\s<>\/*+\-?|&\^!%\.@:=\[\]~(){};,"'#]$/m;
 export function parse_regexp({ text_stream }: TokenStream) {
     function parse_list() {
         while (next !== "]") {
@@ -43,14 +43,13 @@ export function parse_regexp({ text_stream }: TokenStream) {
     var node: INode = {
         name: Nodes.RegularExpression,
         type: NodeType.Expression,
-        body: "" as never
+        symbol: ""
     }, next: string, body = "/";
     while ((next = text_stream.next) !== "/") {
         if (next == undefined) {
             throw "Unterminated regular expression";
         }
         if (next === "\\") {
-            ;
             body += text_stream.move() + text_stream.move();
             continue;
         }
@@ -69,6 +68,6 @@ export function parse_regexp({ text_stream }: TokenStream) {
         body += text_stream.next;
         text_stream.move();
     }
-    node.body = body as never;
+    node.symbol = body;
     return node;
 }

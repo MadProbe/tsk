@@ -2,12 +2,13 @@ import { AccessChainItemKind, Nodes, NodeType, ParameterNodeKind } from "./enums
 import { occurrences } from "./utils/occurrences.js";
 import { assert_type, includes, random_var_name, undefined } from "./utils/util.js";
 import { _echo } from "./utils/_echo.js";
-import { AccessChainItem } from "./nodes";
-import type { IClassNode, INode, IParameterNode, ITryStatmentNode } from "./nodes";
+import { AccessChainItem, ParameterNode } from "./nodes";
+import type { IClassNode, INode, ITryStatmentNode } from "./nodes";
 
 
 var __pretty = true;
-function as_expression(exp: INode) {
+var commaAndWhitespace: string;
+function as_expression(exp: INode): INode {
     if (exp.type === NodeType.Expression) {
         return exp;
     } else {
@@ -20,7 +21,7 @@ function as_expression(exp: INode) {
                 body: [exp]
             }],
             args: []
-        } as INode;
+        };
     }
 }
 function isBlockNode(node: INode) {
@@ -43,7 +44,7 @@ function isSimple(node: INode) {
         Nodes.AsyncFunctionExpression,
         Nodes.AsyncGeneratorFunctionExpression,
         Nodes.BigIntValue,
-        Nodes.CallExpression,
+        // Nodes.CallExpression,
         Nodes.MemberAccessExpression,
         Nodes.FalseValue,
         Nodes.TrueValue,
@@ -64,9 +65,9 @@ function isSimple(node: INode) {
  * @param {import("./parser").Node} node 
  * @param {any} meta 
  */
-function _emit(node: INode, meta: Record<string, any>) {
-    var __text = "", elementParams: IParameterNode[], elementArgs: INode[],
-        length: number, index: number, body: string | readonly INode[] | readonly object[] | readonly AccessChainItem[], __diff: boolean,
+function _emit(node: INode, meta: EmitterOptions) {
+    var __text = "", elementParams: ParameterNode[], elementArgs: INode[],
+        length: number, index: number, body: readonly INode[] | readonly AccessChainItem[], __diff: boolean,
         quote: string, rquote: string, name: string, node_name: Nodes, _: any;
     /**
      * Inserts space into __text variable if text must be prettified
@@ -84,25 +85,22 @@ function _emit(node: INode, meta: Record<string, any>) {
      * Inserts indentation into __text variable
      */
     function is() {
-        __pretty && (__text += meta.sp);
+        __pretty && (__text += meta.indentation);
     }
     /**
      * Lowers indentation by 4 spaces
      */
     function li() {
-        meta.sp = meta.sp.slice(0, -4);
+        __pretty && (meta.indentation = meta.indentation.slice(0, -4));
     }
     /**
      * Raises indentation by 4 spaces
      */
     function ri() {
-        meta.sp += "    ";
+        __pretty && (meta.indentation += "    ");
     }
     function declare<T extends string>(name: T): T {
-        (__top.params ||= []).push({
-            name,
-            kind: ParameterNodeKind.NoPrefix
-        });
+        __top.params!.push(new ParameterNode(name, ParameterNodeKind.NoPrefix, undefined));
         return name;
     }
     function pre_emit_body() {
@@ -125,7 +123,7 @@ function _emit(node: INode, meta: Record<string, any>) {
                 assigned++;
                 is();
                 __text += _emit(element, meta);
-                if ((index + 1 < length || __pretty) && !isBlockNode(element) && element.type !== NodeType.Ephemerial) {
+                if ((index + 1 < length || __pretty) && !isBlockNode(element)) {
                     __text += ";";
                 }
                 nl();
@@ -139,18 +137,17 @@ function _emit(node: INode, meta: Record<string, any>) {
         function sp() {
             __pretty && (___text += " ");
         }
-        for (var index = 0, length = nodes.length, __text = ""; index < length; index++) {
-            var node = nodes[index], body = node.body, nodeKind = node.kind;
+        for (var index = 0, __text = ""; index < nodes.length; index++) {
+            const node = nodes[index], body = node.body, nodeKind = node.kind;
             if (nodeKind === AccessChainItemKind.Head) {
-                __text += _emit(isSimple(body = as_expression(body)) && body.name !== Nodes.NumberValue ? body :
+                __text += _emit(isSimple(body) && body.name !== Nodes.NumberValue ? as_expression(body) :
                     ({ name: Nodes.GroupExpression, type: NodeType.Expression, body: [body] }), meta);
             } else if (nodeKind === AccessChainItemKind.Normal) {
                 __text += `.${ _emit(body, meta) }`;
             } else if (nodeKind === AccessChainItemKind.Computed) {
                 __text += `[${ _emit(body, meta) }]`;
             } else if (nodeKind === AccessChainItemKind.Optional || nodeKind === AccessChainItemKind.OptionalComputed) {
-                var randomName = random_var_name(), ___text = `(n(${ randomName }`;
-                declare(randomName);
+                var randomName = declare(random_var_name()), ___text = `(n(${ randomName }`;
                 sp();
                 ___text += "=";
                 sp();
@@ -167,7 +164,7 @@ function _emit(node: INode, meta: Record<string, any>) {
                     type: NodeType.Expression,
                     symbol: randomName
                 }));
-                nodes[1].kind = nodeKind === AccessChainItemKind.Optional ?
+                node.kind = nodeKind === AccessChainItemKind.Optional ?
                     AccessChainItemKind.Normal :
                     AccessChainItemKind.Computed;
                 return `${ ___text }${ emitChain(nodes) })`;
@@ -177,7 +174,7 @@ function _emit(node: INode, meta: Record<string, any>) {
                     type: NodeType.Expression,
                     symbol: `__na(${ __text })`
                 }));
-                nodes[1].kind = nodeKind === AccessChainItemKind.NormalNullAsserted ?
+                node.kind = nodeKind === AccessChainItemKind.NormalNullAsserted ?
                     AccessChainItemKind.Normal :
                     AccessChainItemKind.Computed;
                 return emitChain(nodes);
@@ -201,13 +198,11 @@ function _emit(node: INode, meta: Record<string, any>) {
         __text += "(";
         elementArgs = node.args!;
         length = elementArgs.length;
-        index = 0;
-        for (; index < length; index++) {
-            let node = elementArgs[index];
+        for (index = 0; index < length; index++) {
+            const node = elementArgs[index];
             __text += _emit(node, meta);
             if (index + 1 < length) {
-                __text += ",";
-                sp();
+                __text += commaAndWhitespace;
             }
         }
         __text += ")";
@@ -221,8 +216,7 @@ function _emit(node: INode, meta: Record<string, any>) {
         length && is();
         __text += "}";
     }
-    meta.sp ??= "";
-    body = node.body!;
+    body = node.body! as INode[] | AccessChainItem[];
     switch (node_name = node.name) {
         case Nodes.ArgumentsObject:
             __text += "arguments";
@@ -233,14 +227,12 @@ function _emit(node: INode, meta: Record<string, any>) {
             for (let index = 0, length = body.length; index < length; index++) {
                 const element = body[index];
                 __text += _emit(element, meta);
-                if (element.name !== Nodes.Shebang || !meta.forgetShebang) {
-                    if (__pretty && !isBlockNode(element) && element.type !== NodeType.Ephemerial) {
-                        __text += ";";
-                    }
-                    if (index < length - 1) {
-                        nl();
-                        is();
-                    }
+                if (__pretty && !isBlockNode(element) && element.type !== NodeType.Ephemerial) {
+                    __text += ";";
+                }
+                if (index < length - 1) {
+                    nl();
+                    is();
                 }
             }
             break;
@@ -433,6 +425,7 @@ function _emit(node: INode, meta: Record<string, any>) {
             __text += `$${ node.symbol }`;
             break;
 
+        case Nodes.RegularExpression:
         case Nodes.ExternalVariable:
         case Nodes.SymbolNoPrefix:
         case Nodes.NumberValue:
@@ -469,9 +462,8 @@ function _emit(node: INode, meta: Record<string, any>) {
                         type: NodeType.Statment,
                         body: [body[0]]
                     }]
-                }],
-                args: [body[1]]
-            } as INode, meta);
+                }], args: [body[1]]
+            }, meta);
             break;
 
         case Nodes.CallExpression:
@@ -482,18 +474,7 @@ function _emit(node: INode, meta: Record<string, any>) {
 
         case Nodes.GroupExpression:
             assert_type<INode[]>(body);
-            __text += "(";
-            length = body.length;
-            index = 0;
-            for (; index < length; index++) {
-                let node = body[index];
-                __text += _emit(as_expression(node), meta);
-                if (index + 1 < length) {
-                    __text += ",";
-                    sp();
-                }
-            }
-            __text += ")";
+            __text += `(${ body.map(node => _emit(as_expression(node), meta)).join(commaAndWhitespace) })`;
             break;
 
         case Nodes.ReturnStatment:
@@ -600,7 +581,7 @@ function _emit(node: INode, meta: Record<string, any>) {
                 } else {
                     sp();
                     __text += "{";
-                    bodyLength = (body = node.else!.body!).length;
+                    bodyLength = (body = node.else!.body! as INode[]).length;
                     bodyLength && nl();
                     ri();
                     emit_body();
@@ -644,7 +625,6 @@ function _emit(node: INode, meta: Record<string, any>) {
             break;
 
         case Nodes.AwaitExpression:
-            assert_type<boolean>(_);
             assert_type<[INode]>(body);
             __text += "yield";
             if (_ = node.outerBody!.name === Nodes.AsyncGeneratorFunctionExpression) {
@@ -686,7 +666,7 @@ function _emit(node: INode, meta: Record<string, any>) {
 
         case Nodes.Array:
             assert_type<INode[]>(body);
-            __text += `[${ body.map(node => _emit(as_expression(node), meta)).join(`,${ __pretty ? " " : "" }`) }]`;
+            __text += `[${ body.map(node => _emit(as_expression(node), meta)).join(commaAndWhitespace) }]`;
             break;
 
         case Nodes.ArgumentBindingExpression:
@@ -695,12 +675,11 @@ function _emit(node: INode, meta: Record<string, any>) {
             sp();
             __text += `u,`;
             sp();
-            __text += `${ node.args!.map(node => _emit(as_expression(node), meta)).join(`,${ __pretty ? " " : "" }`) })`;
+            __text += `${ node.body!.map(node => _emit(as_expression(node as INode), meta)).join(commaAndWhitespace) })`;
             break;
 
         case Nodes.LiteralLogicalNotExpression:
             assert_type<[INode]>(body);
-            assert_type<string>(_);
             _ = as_expression(body[0]);
             __text += `!${ isSimple(_) ? _emit(_, meta) : `(${ _emit(_, meta) })` }`;
             break;
@@ -824,10 +803,6 @@ function _emit(node: INode, meta: Record<string, any>) {
             emitCallExpression();
             break;
 
-        case Nodes.RegularExpression:
-            __text += body;
-            break;
-
         case Nodes.ForRangeStatment:
             {
                 const [from, to, as] = node.args as [INode, INode, string];
@@ -873,14 +848,14 @@ function _emit(node: INode, meta: Record<string, any>) {
             break;
 
         case undefined: {
-            const sp = meta.sp + "    ";
+            const sp = meta.indentation + "    ";
             __text += `/*\n${ sp }Cannot emit undefined, has something gone wrong?` +
-                `\n${ sp }Stack trace:\n${ sp + Error().stack?.replace(/\n/g, `\n${ sp }`) }\n${ meta.sp }*/`;
+                `\n${ sp }Stack trace:\n${ sp + Error().stack?.replace(/\n/g, `\n${ sp }`) }\n${ meta.indentation }*/`;
             break;
         }
 
         case Nodes.Shebang:
-            if (!meta.forgetShebang) __text += "#!" + body;
+            __text += "#!" + node.symbol;
             break;
 
         case Nodes.ClassExpression:
@@ -893,18 +868,24 @@ function _emit(node: INode, meta: Record<string, any>) {
     }
     return __text;
 }
-export interface EmitterOptions {
+export interface IEmitterOptions {
     pretty?: boolean;
     forgetShebang?: boolean;
     url?: string;
 }
 var __top: INode;
+class EmitterOptions implements IEmitterOptions {
+    indentation: string = "";
+    constructor(public readonly url: string | undefined) { }
+}
 /**
  * @param {import("./parser").Node} node 
  * @param {import("./emitter").EmitterOptions} opts
  */
-export function emit(node: INode, { pretty = false, forgetShebang = true, ...other }: EmitterOptions = {}) {
+export function emit(node: INode, { pretty = false, forgetShebang = true, ...other }: IEmitterOptions = {}) {
     __pretty = pretty;
+    commaAndWhitespace = ',' + (__pretty ? " " : "");
+    const options = new EmitterOptions(other.url);
 
-    return _emit(__top = node, { forgetShebang, ...other });
+    return (!forgetShebang && node.meta!.shebang && _emit(node.meta!.shebang as INode, options) || "") + _emit(__top = node, options);
 }

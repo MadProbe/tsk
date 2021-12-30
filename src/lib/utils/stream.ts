@@ -1,13 +1,14 @@
 import type { Tokens } from "../enums";
 import type { Prefix } from "./advancers.js";
 
+
 export interface TextStream {
     readonly text: string;
     index: number;
     next: string;
     move(): string;
     advance(): string;
-    down(times?: number): string;
+    down(times: number): string;
 }
 export interface TokenStream {
     readonly next: Token;
@@ -26,7 +27,7 @@ export type TokenList = readonly Token[];
 
 export class Stream implements TextStream {
     public index = 0;
-    public next!: string;
+    public next: string;
     constructor(public readonly text: string) {
         this.next = text[0];
     }
@@ -38,7 +39,7 @@ export class Stream implements TextStream {
         this.next = this.text[this.index];
         return __next!;
     }
-    down(times = 1) {
+    down(times: number) {
         return this.next = this.text[this.index -= times];
     }
 }
