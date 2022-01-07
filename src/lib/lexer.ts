@@ -14,6 +14,8 @@ const $3charOperatorComparer = new MultiValueComparer($3charoperators);
 const keywordComparer = new MultiValueComparer(keywords);
 const validAfterNumberChars = new MultiValueComparer([...whitespaceCharsComparer, ...operatorCharsComparer, "'" as const, '"' as const]);
 const validIDComparer = new ValidCharsComparer();
+const operatorTokenMap = new Map([...operatorCharsComparer, ...$2charoperators, ...$3charoperators, ">>>=" as const]
+    .map(operator => [operator, new Token(Tokens.Operator, operator)]));
 
 
 
@@ -57,31 +59,28 @@ class Lexer implements TokenStream {
         if (nullish(char)) {
             return char;
         } else if (operatorCharsComparer.includes(char)) {
-            var _char = this.text_stream.move();
-            var joined = char + _char;
+            const _char = this.text_stream.move();
+            const joined = char + _char;
             if ($2charOperatorComparer.includes(joined)) {
-                var __char = this.text_stream.move();
-                var _joined = joined + __char;
+                const __char = this.text_stream.move();
+                const _joined = joined + __char;
                 if ($3charOperatorComparer.includes(_joined)) {
-                    var ___char = this.text_stream.move();
-                    var __joined = _joined + ___char;
+                    const ___char = this.text_stream.move();
+                    const __joined = _joined + ___char;
                     if (">>>=" === __joined) {
-                        return new Token(Tokens.Operator, __joined);
+                        return operatorTokenMap.get(__joined)!;
                     } else {
-                        this.text_stream.down(1);
-                        return new Token(Tokens.Operator, _joined);
+                        return this.text_stream.down(1), operatorTokenMap.get(_joined)!;
                     }
                 } else if (joined === "//") {
                     return this._scanComment(), this._lex(this.text_stream.move());
                 } else if (joined === "/*") {
                     return this._scanMultiineComment(__char), this._lex(this.text_stream.move());
                 } else {
-                    this.text_stream.down(1);
-                    return new Token(Tokens.Operator, joined);
+                    return this.text_stream.down(1), operatorTokenMap.get(joined)!;
                 }
             } else {
-                this.text_stream.down(1);
-                return new Token(Tokens.Operator, char);
+                return this.text_stream.down(1), operatorTokenMap.get(char)!;
             }
         } else if (whitespaceCharsComparer.includes(char)) {
             return this._scanWhitespace(), this._lex(this.text_stream.move());
