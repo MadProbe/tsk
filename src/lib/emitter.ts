@@ -53,7 +53,7 @@ function isSimple(node: INode) {
         Nodes.NaNValue,
         Nodes.NullValue,
         Nodes.NumberValue,
-        Nodes.RangeExpression,
+        // Nodes.RangeExpression,
         Nodes.StringValue,
         Nodes.Symbol,
         Nodes.SymbolNoPrefix,
@@ -461,10 +461,31 @@ function _emit(node: INode, meta: EmitterOptions) {
             break;
 
         case Nodes.CallExpression:
-            assert_type<INode[]>(body);
+            assert_type<[Node]>(body);
             __text += _emit(body[0], meta);
             emitCallExpression();
             break;
+
+        case Nodes.OptionalCallExpression: {
+            assert_type<[Node]>(body);
+            const random_name = declare(random_var_name());
+            __text += `(n(${ random_name }`;
+            sp();
+            __text += "=";
+            sp();
+            __text += `${ _emit(body[0], meta) })`;
+            sp()
+            __text += "?";
+            sp();
+            __text += "u";
+            sp();
+            __text += ":";
+            sp();
+            __text += random_name;
+            emitCallExpression();
+            __text += ")";
+            break;
+        }
 
         case Nodes.GroupExpression:
             assert_type<INode[]>(body);

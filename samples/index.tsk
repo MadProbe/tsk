@@ -198,6 +198,7 @@ for range (0 to 5 as i) {
 }
 if (1) {} else 0xff;
 ((fn () => fn () {})()()?.p);
+null?.(11111);
 // 0 or 1;
 // / /;
 //;~;
