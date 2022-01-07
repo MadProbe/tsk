@@ -1,22 +1,28 @@
 import {
     isArray, include, undefined, SyntaxError, random_var_name, includes,
-    error_unexcepted_token, assert_type, except_token
+    error_unexcepted_token, assert_type, assert_token
 } from "../utils/util.js";
 import { _echo } from "../utils/_echo.js";
 import { FunctionNodeKind, Nodes, ParameterNodeKind, NodeType, AccessChainItemKind, Tokens, DiagnosticSeverity } from "../enums";
 import { lex } from "../lexer.js";
 import { memberAccessOperators, end_expression } from "../utils/constants.js";
-import { _parseMemberAccess } from "./member-access.js";
-import { advance_next, except_next_token } from "../utils/advancers.js";
+import { parse_member_access } from "./member-access.js";
+import { advance_next, assert_next_token } from "../utils/advancers.js";
 import { parse_body, parse_next_body } from "./body-parser.js";
 import { __cache, main_parse, promises, _parse, __parse, __used, _parse_and_assert_last_token, pushDiagnostic } from "../parser.js";
 import { __external_var_creator } from "./external-var.js";
 import { parse_call_expression } from "./call-expression.js";
-import { type IParseMeta, type INode, type IParameterNode, type IClassNode, type AccessChainItem, type IUsingStatmentNode, ParseMeta, ParameterNode } from "../nodes";
+import { type INode, type IClassNode, type AccessChainItem, ParseMeta, ParameterNode, Node, SymbolNode, StatmentWithBodyNode, TryStatmentNode, Writable, IfStatmentNode, ExpressionWithBodyNode, PrefixlessSymbolNode, ExpressionWithBodyAndOuterNode } from "../nodes";
 import type { TokenStream } from "../utils/stream.js";
+import { MultiValueComparer } from "../utils/comparer.js";
 
 
-type KeywordParsers = Readonly<Record<string, (stream: TokenStream, meta: IParseMeta, ...args: readonly unknown[]) => Readonly<INode>>>;
+type KeywordParsers = Readonly<Record<string, (stream: TokenStream, meta: ParseMeta, ...args: readonly unknown[]) => Readonly<INode>>>;
+const try_phrases = new MultiValueComparer(["catch", "else", "finally"]);
+const keepStatmentStuff = [',', ')'].join('" | "') + memberAccessOperators.join('" | "');
+const awaitOps = ['any', 'all', 'allSettled', 'race'];
+const awaitOpsComparer = new MultiValueComparer(awaitOps);
+const awaitOpsJoined = awaitOps.join('" | "');
 export const keywords_handlers = {
     /**
      * @param {import("./utils/stream.js").TokenStream} stream
@@ -26,7 +32,7 @@ export const keywords_handlers = {
         if (!meta.outer.nonlocals) {
             throw "Nonlocal statment: this statment cannot be used in top-level scope!";
         }
-        const next = except_next_token(stream, Tokens.Symbol);
+        const next = assert_next_token(stream, Tokens.Symbol);
         meta.outer.nonlocals.push(next.body);
         meta.outer.locals = meta.outer.locals!.filter(sym => sym !== next.body);
         return {
@@ -51,9 +57,9 @@ export const keywords_handlers = {
                 type: NodeType.Statment,
                 outerBody: meta.outer
             };
-            except_next_token(stream, Tokens.Operator, "}", "Include statment:");
-            except_next_token(stream, Tokens.Keyword, "from", "Include statment:");
-            except_next_token(stream, Tokens.String, undefined, "Include statment:");
+            assert_next_token(stream, Tokens.Operator, "}", "Include statment:");
+            assert_next_token(stream, Tokens.Keyword, "from", "Include statment:");
+            assert_next_token(stream, Tokens.String, undefined, "Include statment:");
         } else {
             error_unexcepted_token(next);
         }
@@ -75,34 +81,15 @@ export const keywords_handlers = {
      * @param {import("./parser").ParseMeta} meta
      */
     if(stream, meta) {
-        except_next_token(stream, Tokens.Operator, "(");
+        assert_next_token(stream, Tokens.Operator, "(");
         var expression = _parse_and_assert_last_token(stream, meta, Tokens.Operator, ")"), expressions: INode[];
         var next = advance_next(stream, "{");
         if (next.type === Tokens.Operator && next.body === "{") {
             expressions = parse_body(stream, meta);
         } else {
-            expressions = [_parse(next, stream, meta) as INode];
+            expressions = [_parse(next, stream, meta)];
         }
-        var node: INode = {
-            name: Nodes.IfStatment,
-            type: NodeType.Statment,
-            body: expressions,
-            args: [expression],
-            else: undefined!,
-            elseif: undefined!,
-            outerBody: meta.outer
-            // /**
-            //  * @param {boolean} pretty 
-            //  * @param {string} whitespace
-            //  */
-            // toString(pretty: boolean, whitespace: string) {
-            //     if (pretty) {
-            //         return `if (${ expression }) ${ impl ? expressions.toString(true) : `{\n${ whitespace + "    " }${ expressions.toString(true, whitespace + "    ") }${ whitespace }\n}` }`;
-            //     } else {
-            //         return `if(${ expression })${ impl ? expressions.toString(false) : `{${ expressions.toString(false) }}` }`;
-            //     }
-            // }
-        };
+        var node = IfStatmentNode(expressions as Node[], meta.outer as Node, expression as Node);
         try {
             next = stream.try("else");
         } catch (error) {
@@ -112,14 +99,9 @@ export const keywords_handlers = {
             stream.confirm_try();
             next = advance_next(stream, "if");
             if (next.type === Tokens.Keyword && next.body === "if") {
-                node.elseif = keywords_handlers.if(stream, meta);
+                node.meta.elseif = keywords_handlers.if(stream, meta) as Node;
             } else  {
-                node.else = {
-                    name: Nodes.ElseStatment,
-                    type: NodeType.Statment,
-                    body: next.type === Tokens.Operator && next.body === "{" ? parse_body(stream, meta) : [_parse(next, stream, meta) as INode],
-                    outerBody: meta.outer
-                };
+                node.meta.else = StatmentWithBodyNode(Nodes.ElseStatment, next.type === Tokens.Operator && next.body === "{" ? parse_body(stream, meta) : [_parse(next, stream, meta) as INode], meta.outer);
             }
         } else {
             stream.cancel_try();
@@ -187,31 +169,14 @@ export const keywords_handlers = {
      * @param {import("./utils/stream.js").TokenStream} stream
      */
     async(stream, meta) {
-        except_next_token(stream, Tokens.Keyword, "fn", "Async(Generator?)Function statment:");
+        assert_next_token(stream, Tokens.Keyword, "fn", "Async(Generator?)Function statment:");
         return keywords_handlers.fn(stream, meta, FunctionNodeKind.Async);
     },
-    /**
-     * @param {import("./utils/stream.js").TokenStream} stream
-     */
     not(stream, meta) {
-        return {
-            name: Nodes.LiteralLogicalNotExpression,
-            type: NodeType.Expression,
-            body: [__parse(advance_next(stream, end_expression), stream, meta)]
-        };
+        return ExpressionWithBodyNode(Nodes.LiteralLogicalNotExpression, [__parse(advance_next(stream, end_expression), stream, meta)]);
     },
-    /**
-     * @param {import("./utils/stream.js").TokenStream} stream
-     */
     __external_var: __external_var_creator(NodeType.Expression),
-    /**
-     * @param {import("./utils/stream.js").TokenStream} stream
-     */
     __external: __external_var_creator(NodeType.Statment),
-    /**
-     * @param {import("./utils/stream.js").TokenStream} stream
-     * @param {import("./parser").ParseMeta} meta
-     */
     fn(stream, meta, type: FunctionNodeKind = FunctionNodeKind.Sync) {
         type _1 = "Function statment:";
         type _2 = `Generator${ _1 }`;
@@ -226,7 +191,7 @@ export const keywords_handlers = {
         _[3] = "Async" + _[1] as _4;
         const prefix = _[type];
         var name = "";
-        var params: IParameterNode[] = [];
+        var params: ParameterNode[] = [];
         var next = advance_next(stream, 'symbol" | "(', prefix);
         var paramType: ParameterNodeKind;
         var hasRest = false;
@@ -277,10 +242,10 @@ export const keywords_handlers = {
                 next = advance_next(stream, ",", prefix);
 
                 if (next.type === Tokens.Operator && next.body === "=") {
-                    var parsed = _parse(advance_next(stream, end_expression, prefix), stream, innerMeta);
+                    var parsed: INode | undefined = _parse(advance_next(stream, end_expression, prefix), stream, innerMeta);
                     next = advance_next(stream, end_expression, prefix);
                 }
-                params.push(new ParameterNode(body, paramType, parsed!));
+                params.push(new ParameterNode(body, paramType, parsed));
 
                 if (next.type === Tokens.Operator && next.body === ")") {
                     break;
@@ -302,18 +267,13 @@ export const keywords_handlers = {
         next = advance_next(stream, "{", prefix);
         if (next.type === Tokens.Operator && next.body === "=>") {
             next = advance_next(stream, end_expression, prefix);
-            innerMeta.insideExpression = true;
             if (next.type !== Tokens.Operator && next.body !== "{") {
-                node.body = [{
-                    name: Nodes.ReturnStatment,
-                    type: NodeType.Statment,
-                    body: [_parse(next, stream, innerMeta)],
-                    outerBody: node
-                }];
+                innerMeta.insideExpression = true;
+                node.body = [StatmentWithBodyNode(Nodes.ReturnStatment, [_parse(next, stream, innerMeta)], node)];
                 return node;
             }
         }
-        except_token(next, Tokens.Operator, "{");
+        assert_token(next, Tokens.Operator, "{");
         node.body = parse_body(stream, innerMeta);
         return node;
     },
@@ -377,33 +337,18 @@ export const keywords_handlers = {
         return node;
     },
     return(stream, meta) {
-        return {
-            name: Nodes.ReturnStatment,
-            type: NodeType.Statment,
-            body: [_parse(advance_next(stream, end_expression, "Return statment:"), stream, meta)],
-            outerBody: meta.outer
-        };
+        return StatmentWithBodyNode(Nodes.ReturnStatment, [_parse(advance_next(stream, end_expression, "Return statment:"), stream, meta)], meta.outer);
     },
     throw(stream, meta) {
         __used.throw = true;
-        return {
-            name: Nodes.ThrowExpression,
-            type: NodeType.Expression,
-            body: [__parse(advance_next(stream, end_expression, "Throw statment:"), stream, meta)]
-        };
+        return ExpressionWithBodyNode(Nodes.ThrowExpression, [__parse(advance_next(stream, end_expression, "Throw statment:"), stream, meta)]);
     },
     yield(stream, meta) {
         var next = advance_next(stream, end_expression, "Yield expression:");
         var yield_from = next.type === Tokens.Operator && next.body === "*";
-        var expression = yield_from ?
+        return ExpressionWithBodyAndOuterNode(yield_from ? Nodes.YieldFromExpression : Nodes.YieldExpression, [yield_from ?
             __parse(advance_next(stream, end_expression), stream, meta) :
-            __parse(next, stream, meta);
-        return {
-            name: yield_from ? Nodes.YieldFromExpression : Nodes.YieldExpression,
-            type: NodeType.Expression,
-            outerBody: meta.outer,
-            body: [expression]
-        };
+            __parse(next, stream, meta)], meta.outer as Node);
     },
     await(stream, meta) {
         if (meta.outer.name === Nodes.FunctionExpression) {
@@ -415,16 +360,12 @@ export const keywords_handlers = {
         const prefix = "Await expression:";
         var next = advance_next(stream, end_expression, prefix);
         if (next.type === Tokens.Operator && next.body === ".") {
-            next = advance_next(stream, ['any', 'all', 'allSettled', 'race'].join('" | "'), prefix);
-            if (next.type === Tokens.Symbol && /^(any|all(Settled)?|race)$/m.test(next.body)) {
+            next = advance_next(stream, awaitOpsJoined, prefix);
+            if (next.type === Tokens.Symbol && awaitOpsComparer.includes(next.body)) {
                 var expression: INode = {
                     name: Nodes.CallExpression,
                     type: NodeType.Expression,
-                    body: [{
-                        name: Nodes.SymbolNoPrefix,
-                        type: NodeType.Expression,
-                        symbol: `p.${ next.body }`
-                    }],
+                    body: [PrefixlessSymbolNode(`p.${ next.body }`)],
                     args: [_parse(advance_next(stream, end_expression, prefix), stream, meta)]
                 };
             } else {
@@ -433,24 +374,15 @@ export const keywords_handlers = {
         } else {
             expression = _parse(next, stream, meta);
         }
-        return {
-            name: Nodes.AwaitExpression,
-            type: NodeType.Expression,
-            outerBody: meta.outer,
-            body: [expression]
-        };
+        return ExpressionWithBodyAndOuterNode(Nodes.AwaitExpression, [expression], meta.outer as Node);
     },
     this() {
-        return {
-            name: Nodes.SymbolNoPrefix,
-            type: NodeType.Expression,
-            symbol: "this"
-        };
+        return PrefixlessSymbolNode(`this`);
     },
     keep(stream, meta) {
         const prefix = "Keep statment:";
         const args: INode[] = [];
-        except_next_token(stream, Tokens.Operator, "(");
+        assert_next_token(stream, Tokens.Operator, "(");
         var next = advance_next(stream, "symbol", prefix);
         // ???
         if (next.type === Tokens.Operator || next.body !== ")") {
@@ -471,13 +403,9 @@ export const keywords_handlers = {
                     if (!(isConstantObject || next.type === Tokens.Symbol)) {
                         error_unexcepted_token(next);
                     }
-                    next2 = advance_next(stream, [',', ')'].join('" | "') + memberAccessOperators.join('" | "'), prefix);
+                    next2 = advance_next(stream, keepStatmentStuff, prefix);
                     if (next2.type === Tokens.Operator && includes(memberAccessOperators, next2.body)) {
-                        arg = {
-                            name: Nodes.MemberAccessExpression,
-                            type: NodeType.Expression,
-                            body: _parseMemberAccess(arg, next, stream, meta),
-                        };
+                        arg = parse_member_access(arg, next, stream, meta);
                     } else {
                         isConstantObject && pushDiagnostic(DiagnosticSeverity.RuntimeError, `Assignment to "${ next.type }" will fail at runtime!`, stream);
                         next = next2;
@@ -495,7 +423,7 @@ export const keywords_handlers = {
                 next = advance_next(stream, "symbol");
             }
         }
-        except_next_token(stream, Tokens.Operator, "{", prefix);
+        assert_next_token(stream, Tokens.Operator, "{", prefix);
         return {
             name: Nodes.KeepStatment,
             type: NodeType.Statment,
@@ -534,51 +462,33 @@ export const keywords_handlers = {
     },
     // TODO
     try(stream, meta) {
-        const node: Partial<IUsingStatmentNode> = {
-            name: Nodes.TryStatment,
-            type: NodeType.Statment,
-            catch: null!,
-            else: null!,
-            body: null!,
-            finally: null!,
-            args: null!,
-            outerBody: meta.outer
-        };
-        var prefix: `Try${"" | "-Using"} statment:` = "Try statment:",
-            next = advance_next(stream, end_expression, prefix), nonuseless = true;
-        if (next.type === Tokens.Keyword && next.body === "using") {
-            assert_type<IUsingStatmentNode>(node);
-            node.args = [];
-            prefix = "Try-Using statment:";
-        }
-        if (next.type === Tokens.Operator && next.body === "{") {
-            node.body = parse_body(stream, meta);
-        }
-        next = advance_next(stream, end_expression, prefix);
-        nonuseless = false;
-        while (next.type === Tokens.Keyword && includes(["catch", "else", "finally"] as const, next.body)) {
-            nonuseless = true;
+        const prefix = "Try statment:";
+        const node = TryStatmentNode(parse_next_body(stream, meta, prefix) as Node[], undefined!, undefined!, undefined!, meta.outer as Node);
+        var next = stream.try(end_expression, prefix);
+        var useless = true;
+        var word: string;
+        while (next.type === Tokens.Keyword && try_phrases.includes(word = next.body)) {
+            useless = false;
             stream.confirm_try();
-            const word = next.body, toAppend = word === "catch" ? ["", []] as IUsingStatmentNode["catch"] : undefined;
-            next = stream.try(end_expression, prefix);
-            if (word === "catch" && next.type === Tokens.Operator && next.body === "(") {
-                stream.confirm_try();
-                except_next_token(stream, Tokens.Symbol);
-                toAppend![0] = stream.next.body;
-                except_next_token(stream, Tokens.Operator, ")", prefix);
-            } else stream.cancel_try();
+            const toAppend = word === "catch" ? StatmentWithBodyNode(Nodes.CatchStatment, undefined!, meta.outer) as Writable<Node> : undefined;
             if (word === "catch") {
-                toAppend![1] = parse_next_body(stream, meta);
-                node[word] = toAppend!;
+                next = advance_next(stream, end_expression, prefix);
+                if (next.type === Tokens.Operator && next.body === "(") {
+                    toAppend!.symbol = assert_next_token(stream, Tokens.Symbol).body;
+                    assert_next_token(stream, Tokens.Operator, ")", prefix);
+                    advance_next(stream, end_expression, prefix);
+                }
+                toAppend!.body = parse_body(stream, meta);
+                node.meta[word] = toAppend!;
             } else {
-                node[word] = parse_next_body(stream, meta);
+                node.meta[word] = parse_next_body(stream, meta) as Node[];
             }
             next = stream.try(end_expression, prefix);
         }
         stream.cancel_try();
-        if (!nonuseless) {
-            pushDiagnostic(DiagnosticSeverity.Warn, `Try statment is useless without else, catch, finally clauses!`, stream);
-            node.finally = [];
+        if (useless) {
+            pushDiagnostic(DiagnosticSeverity.Error, `Try statment was not followed by catch, else or finally clauses`, stream);
+            node.meta.finally = [];
         }
         return node;
     },
@@ -587,7 +497,7 @@ export const keywords_handlers = {
     },
     while(stream, meta) {
         const prefix = "While statment:";
-        except_next_token(stream, Tokens.Operator, "(", prefix);
+        assert_next_token(stream, Tokens.Operator, "(", prefix);
         const arg = _parse_and_assert_last_token(stream, meta, Tokens.Operator, ")", prefix);
         return {
             name: Nodes.WhileStatment,
@@ -600,8 +510,8 @@ export const keywords_handlers = {
     do(stream, meta) {
         const prefix = "Do-While statment:";
         var body = parse_next_body(stream, meta, prefix);
-        except_next_token(stream, Tokens.Keyword, "while", prefix);
-        except_next_token(stream, Tokens.Operator, "(", prefix);
+        assert_next_token(stream, Tokens.Keyword, "while", prefix);
+        assert_next_token(stream, Tokens.Operator, "(", prefix);
         return {
             name: Nodes.DoWhileStatment,
             type: NodeType.Statment,
@@ -617,7 +527,7 @@ export const keywords_handlers = {
         error_unexcepted_token(stream.next);
     },
     import(stream, meta): INode {
-        except_next_token(stream, Tokens.Operator, "(", "Import statment:");
+        assert_next_token(stream, Tokens.Operator, "(", "Import statment:");
         return {
             name: Nodes.ImportExpression,
             type: NodeType.Expression,
@@ -625,17 +535,17 @@ export const keywords_handlers = {
         };
     },
     for(stream, meta) {
-        except_next_token(stream, Tokens.Symbol, "range", "For statment:");
-        except_next_token(stream, Tokens.Operator, "(", "For statment:");
+        assert_next_token(stream, Tokens.Symbol, "range", "For statment:");
+        assert_next_token(stream, Tokens.Operator, "(", "For statment:");
         return {
             name: Nodes.ForRangeStatment,
             type: NodeType.Statment,
             args: [
                 _parse_and_assert_last_token(stream, meta, Tokens.Keyword, "to"),
                 _parse_and_assert_last_token(stream, meta, Tokens.Keyword, "as"),
-                "$" + except_next_token(stream, Tokens.Symbol, undefined, "For statment:").body
+                SymbolNode(assert_next_token(stream, Tokens.Symbol, undefined, "For statment:").body)
             ],
-            body: (except_next_token(stream, Tokens.Operator, ")", "For statment:"), parse_next_body(stream, meta)),
+            body: (assert_next_token(stream, Tokens.Operator, ")", "For statment:"), parse_next_body(stream, meta)),
             outerBody: meta.outer
         };
     }

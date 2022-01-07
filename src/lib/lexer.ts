@@ -1,16 +1,21 @@
 import { Stream, type TextStream, Token, type TokenStream } from "./utils/stream.js";
-import { error_unexcepted_token, includes, nullish, undefined } from "./utils/util.js";
-import { Tokens } from "./enums";
-import { keywords, validChars, $2charoperators, $3charoperators } from "./utils/constants.js";
+import { error_unexcepted_token, nullish, undefined } from "./utils/util.js";
+import { DiagnosticSeverity, Tokens } from "./enums";
+import { keywords, $2charoperators, $3charoperators } from "./utils/constants.js";
 import { advance_next, type Prefix } from "./utils/advancers.js";
+import { MultiValueComparer, ValidCharsComparer } from "./utils/comparer.js";
+import { Diagnostic } from "./parser.js";
 
 
-const operatorCharsRegex = /[<>\/*+\-?|&\^!%\.@:=\[\](){};,~#]/;
+const whitespaceCharsComparer = new MultiValueComparer("\t\f\v\r\n ");
+const operatorCharsComparer = new MultiValueComparer("<>/*+-?|&^!%.@:=[](){};,~#`");
+const $2charOperatorComparer = new MultiValueComparer($2charoperators);
+const $3charOperatorComparer = new MultiValueComparer($3charoperators);
+const keywordComparer = new MultiValueComparer(keywords);
+const validAfterNumberChars = new MultiValueComparer([...whitespaceCharsComparer, ...operatorCharsComparer, "'" as const, '"' as const]);
+const validIDComparer = new ValidCharsComparer();
 
 
-function isWhitespace(char: string) {
-    return char === "\r" || char === "\n" || char === " " || char === "\t" || char === "\f" || char === "\v";
-}
 
 
 class Lexer implements TokenStream {
@@ -20,12 +25,12 @@ class Lexer implements TokenStream {
     constructor(public readonly text_stream: TextStream) { }
     public advance() {
         if (this._triaged !== undefined) throw "FATAL_ERROR_FIX_ME_ASAP: Cannot advance token stream when a token is triaged!";
-        return (this as { next: Token; }).next = this.#lex(this.text_stream.move());
+        return (this as { next: Token; }).next = this._lex(this.text_stream.move());
     }
     public move() {
         if (this._triaged !== undefined) throw "FATAL_ERROR_FIX_ME_ASAP: Cannot move token stream when a token is triaged!";
         const __next = this.next;
-        (this as { next: Token; }).next = this.#lex(this.text_stream.move());
+        (this as { next: Token; }).next = this._lex(this.text_stream.move());
         return __next;
     }
     public try<P extends string>(end: string, prefix?: Prefix<P>): Token {
@@ -45,20 +50,19 @@ class Lexer implements TokenStream {
         this._triageLength = 0;
     }
     public *[Symbol.iterator]() {
-        this.next || this.advance();
-        while (!nullish(this.next)) { yield this.move(); }
+        var next: Token;
+        while (!nullish(next = this.advance())) { yield next; }
     }
-    #lex(char: string): Token {
-        var result: string | undefined;
+    private _lex(char: string): Token {
         if (nullish(char)) {
             return char;
-        } else if (operatorCharsRegex.test(char)) {
+        } else if (operatorCharsComparer.includes(char)) {
             var _char = this.text_stream.move();
             var joined = char + _char;
-            if (includes($2charoperators, joined)) {
+            if ($2charOperatorComparer.includes(joined)) {
                 var __char = this.text_stream.move();
                 var _joined = joined + __char;
-                if (includes($3charoperators, _joined)) {
+                if ($3charOperatorComparer.includes(_joined)) {
                     var ___char = this.text_stream.move();
                     var __joined = _joined + ___char;
                     if (">>>=" === __joined) {
@@ -68,9 +72,9 @@ class Lexer implements TokenStream {
                         return new Token(Tokens.Operator, _joined);
                     }
                 } else if (joined === "//") {
-                    return this.#scanComment(), this.#lex(this.text_stream.move());
+                    return this._scanComment(), this._lex(this.text_stream.move());
                 } else if (joined === "/*") {
-                    return this.#scanMultiineComment(__char), this.#lex(this.text_stream.move());
+                    return this._scanMultiineComment(__char), this._lex(this.text_stream.move());
                 } else {
                     this.text_stream.down(1);
                     return new Token(Tokens.Operator, joined);
@@ -79,46 +83,67 @@ class Lexer implements TokenStream {
                 this.text_stream.down(1);
                 return new Token(Tokens.Operator, char);
             }
-        } else if (isWhitespace(char)) {
-            return this.#scanWhitespace(), this.#lex(this.text_stream.move());
-        } else if (char === "'" || char === "\"") {
-            return this.#scanText(char);
+        } else if (whitespaceCharsComparer.includes(char)) {
+            return this._scanWhitespace(), this._lex(this.text_stream.move());
+        } else if (char === "'") {
+            return this._scanSingleQuoteText();
+        } else if (char === "\"") {
+            return this._scanDoubleQuoteText();
         } else if ('0' <= char && char <= '9') {
-            return this.#scanNumber(char);
-        } else if (result = this.#match(validChars)) {
-            this.text_stream.index = validChars.lastIndex;
-            return new Token(~keywords.indexOf(result) ? Tokens.Keyword : Tokens.Symbol, result);
+            return this._scanNumber(char);
+        } else if (validIDComparer.includes(char)) {
+            return this._scanChars(char);
         } else {
-            throw `Unrecognised character: "${ char }"!`;
+            validIDComparer.init(char);
+            if (validIDComparer.includes(char)) {
+                return this._scanChars(char);
+            }
+            throw new Diagnostic(DiagnosticSeverity.FatalError, `Unregonized character ${ char }`, this).log()! ?? "";
         }
     }
-    #scanText(quot: string): Token {
-        var result = "", last = "", compound = '\\' + quot, next: string;
-        while (!nullish(next = this.text_stream.next) && (next !== quot || last + next === compound)) {
-            last = (this.text_stream.advance(), next);
-            if (nullish(last)) {
+    private _scanChars(result: string) {
+        var next: string;
+        while (!nullish(next = this.text_stream.next) && validIDComparer.includes(next)) {
+            this.text_stream.advance();
+            result += next;
+        }
+        return new Token(keywordComparer.includes(result) ? Tokens.Keyword : Tokens.Symbol, result);
+    }
+    private _scanSingleQuoteText(): Token {
+        var result = "", last = "", next: string;
+        while ((next = this.text_stream.move()) !== "'" || last + next === "\\'") {
+            if (nullish(next)) {
                 throw "Unexcepted EOF";
             }
-            result += last;
+            result += last = next;
         }
-        this.text_stream.advance();
         return new Token(Tokens.String, result);
     }
-    #scanWhitespace(): void {
-        var next: string;
-        while (!nullish(next = this.text_stream.next) && isWhitespace(next)) this.text_stream.advance();
+    private _scanDoubleQuoteText(): Token {
+        var result = "", last = "", next: string;
+        while ((next = this.text_stream.move()) !== '"' || last + next === '\\"') {
+            if (nullish(next)) {
+                throw "Unexcepted EOF";
+            }
+            result += last = next;
+        }
+        return new Token(Tokens.String, result);
     }
-    #scanComment(): void {
+    private _scanWhitespace(): void {
+        var next: string;
+        while (!nullish(next = this.text_stream.next) && whitespaceCharsComparer.includes(next)) this.text_stream.advance();
+    }
+    private _scanComment(): void {
         var next: string;
         while (!nullish(next = this.text_stream.move()) && next !== '\n');
     }
-    #scanMultiineComment(char: string): void {
+    private _scanMultiineComment(char: string): void {
         while (char + this.text_stream.next !== '*/') {
             char = this.text_stream.move();
         }
         this.text_stream.advance();
     }
-    #scanNumber(firstChar: string): Token {
+    private _scanNumber(firstChar: string): Token {
         var result = firstChar, next: string;
         if (firstChar === "0") {
             const format = this.text_stream.move();
@@ -130,7 +155,7 @@ class Lexer implements TokenStream {
                 ) {
                     result += next;
                 }
-                if (this.#matchText(validChars, next)) {
+                if (!validAfterNumberChars.includes(next)) {
                     error_unexcepted_token(new Token(Tokens.Symbol, next), `; ${ next } is not a hexadecimal digit.`);
                 }
             } else if (format === "o") {
@@ -141,7 +166,7 @@ class Lexer implements TokenStream {
                 if (next === "8" || next === "9") {
                     error_unexcepted_token(new Token(Tokens.Number, next), `; ${ next } is not an octal digit.`);
                 }
-                if (this.#matchText(validChars, next)) {
+                if (!validAfterNumberChars.includes(next)) {
                     error_unexcepted_token(new Token(Tokens.Symbol, next), `; ${ next } is not an octal digit.`);
                 }
             } else if (format === ".") {
@@ -154,11 +179,11 @@ class Lexer implements TokenStream {
                     while ('0' <= (next = this.text_stream.move()) && next <= '9') {
                         result += next;
                     }
-                    if (this.#matchText(validChars, next)) {
+                    if (!validAfterNumberChars.includes(next)) {
                         error_unexcepted_token(new Token(Tokens.Symbol, next), `; ${ next } is not a decimal digit.`);
                     }
                 }
-            } else if (this.#matchText(validChars, format)) {
+            } else if (!validAfterNumberChars.includes(format)) {
                 throw "A number literal cannot start with zero";
             }
         } else {
@@ -171,20 +196,12 @@ class Lexer implements TokenStream {
                     result += next;
                 }
             }
-            if (this.#matchText(validChars, next)) {
+            if (!validAfterNumberChars.includes(next)) {
                 error_unexcepted_token(new Token(Tokens.Symbol, next), `; ${ next } is not a decimal digit.`);
             }
         }
         this.text_stream.down(1);
         return new Token(Tokens.Number, result);
-    }
-    #match(regex: RegExp): string | undefined {
-        regex.lastIndex = this.text_stream.index - 1;
-        return regex.exec(this.text_stream.text)?.[0];
-    }
-    #matchText(regex: RegExp, text: string): string | undefined {
-        regex.lastIndex = 0;
-        return regex.exec(text)?.[0];
     }
 };
 

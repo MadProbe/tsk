@@ -1,43 +1,91 @@
-import type { Nodes, ParameterNodeKind, NodeType, AccessChainItemKind, ObjectBodyNodeKind } from "./enums";
+import { Nodes, type ParameterNodeKind, NodeType, type AccessChainItemKind, type ObjectBodyNodeKind } from "./enums";
 
 
-export type NodeName = Nodes;
+type NodeBody = INode[] | AccessChainItem[] | Record<string, unknown>[] | undefined;
+export type Writable<T> = { -readonly [K in keyof T]: T[K] };
 
 export interface INodeBase {
-    name: NodeName;
+    name: Nodes;
     type: NodeType;
 }
 
 export interface INode extends INodeBase {
-    body?: INode[] | AccessChainItem[] | Record<string, unknown>[];
+    body?: NodeBody;
     outerBody?: INode;
-    params?: IParameterNode[];
     symbol?: string;
     meta?: Record<string, unknown>;
+    params?: ParameterNode[];
     args?: INode[];
     locals?: string[];
     nonlocals?: string[];
-    else?: INode;
-    elseif?: INode;
 }
 
-export abstract class Node implements INode {
-    public constructor(public readonly name: NodeName, public readonly type: NodeType,
-        public readonly body?: INode[] | AccessChainItem[] | Record<string, unknown>[], public readonly outerBody?: INode,
-        public readonly symbol?: string, public readonly meta?: Record<string, unknown>) { }
+export abstract class BasicMeta {
+    [key: string]: unknown;
 }
 
-export interface ITryStatmentNode extends INodeBase {
-    body: INode[];
-    else: INode[];
-    catch: [name: string, value: INode[]];
-    finally: INode[];
-    outerBody: INode;
+type Hollow = BasicMeta | undefined;
+
+export class Node<TMeta extends BasicMeta | undefined = Hollow> implements INode {
+    public constructor(public readonly name: Nodes, public readonly type: NodeType, public readonly body: NodeBody,
+        public readonly outerBody: INode | Node | undefined, public readonly symbol: string | undefined, public readonly meta: TMeta) { }
 }
 
-export interface IUsingStatmentNode extends ITryStatmentNode {
-    args: [indentifier: string, value: INode][];
+export const StatmentWithBodyNode = (name: Nodes, body: NodeBody, outerBody: INode) =>
+    new Node(name, NodeType.Statment, body, outerBody, undefined, undefined);
+
+export const ExpressionWithBodyNode = (name: Nodes, body: NodeBody) =>
+    new Node(name, NodeType.Expression, body, undefined, undefined, undefined);
+
+export const ExpressionWithBodyAndOuterNode = (name: Nodes, body: NodeBody, outer: Node) =>
+    new Node(name, NodeType.Expression, body, outer, undefined, undefined);
+
+export const ExpressionWithBodyAndSymbolNode = (name: Nodes, body: NodeBody, symbol: string) =>
+    new Node(name, NodeType.Expression, body, undefined, symbol, undefined);
+
+export const PrefixlessSymbolNode = (symbol: string) =>
+    new Node(Nodes.SymbolNoPrefix, NodeType.Expression, undefined, undefined, symbol, undefined);
+
+export const SymbolNode = (symbol: string) =>
+    new Node(Nodes.Symbol, NodeType.Expression, undefined, undefined, symbol, undefined);
+
+export const ConstantValueNode = (nodename: Nodes) =>
+    new Node(nodename, NodeType.Expression, undefined, undefined, undefined, undefined);
+
+export const StringNode = (symbol: string) =>
+    new Node(Nodes.StringValue, NodeType.Expression, undefined, undefined, symbol, undefined);
+
+export const NumberNode = (symbol: string) =>
+    new Node(Nodes.NumberValue, NodeType.Expression, undefined, undefined, symbol, undefined);
+
+export const SymbolShortcutNode = (symbol: string) =>
+    new Node(Nodes.SymbolShortcut, NodeType.Expression, undefined, undefined, symbol, undefined);
+
+export class IfStatmentMeta extends BasicMeta {
+    public readonly else: Node;
+    constructor($else: Node, public readonly elseif: Node, public readonly condition: Node) {
+        super();
+        this.else = $else;
+    }
 }
+
+export const IfStatmentNode = (body: Node[], outer: Node, condition: Node) =>
+    new Node(Nodes.IfStatment, NodeType.Statment, body, outer, undefined, new IfStatmentMeta(undefined!, undefined!, condition) as Writable<IfStatmentMeta>);
+
+export class TryStatmentMeta extends BasicMeta {
+    public readonly else: Node[];
+    public readonly catch: Node;
+    public readonly finally: Node[];
+    constructor($else: Node[], $catch: Node, $finally: Node[]) {
+        super();
+        this.else = $else;
+        this.catch = $catch;
+        this.finally = $finally;
+    }
+}
+
+export const TryStatmentNode = (body: Node[], $else: Node[], $catch: Node, $finally: Node[], outerBody: Node) =>
+    new Node(Nodes.TryStatment, NodeType.Statment, body, outerBody, undefined, new TryStatmentMeta($else, $catch, $finally) as Writable<TryStatmentMeta>);
 
 export interface ClassProperty {
     name: INode;
@@ -46,7 +94,7 @@ export interface ClassProperty {
 
 export interface ClassMethod extends ClassProperty {
     decorators: INode[];
-    params: IParameterNode[];
+    params: ParameterNode[];
 }
 
 export interface ClassGetter extends ClassMethod {
@@ -54,12 +102,12 @@ export interface ClassGetter extends ClassMethod {
 }
 
 export interface ClassSetter extends ClassMethod {
-    params: [] | [IParameterNode & { kind: ParameterNodeKind.Normal; }];
+    params: [] | [ParameterNode & { kind: ParameterNodeKind.Normal; }];
 }
 
 export interface ClassConstructor {
     body: INode[];
-    params: IParameterNode[];
+    params: ParameterNode[];
     async: boolean;
     gen: boolean;
 }
@@ -68,7 +116,7 @@ export interface ClassNodeProps {
     methods: ClassMethod[];
     getters: ClassGetter[];
     settets: ClassSetter[];
-    props: { name: INode; value: INode }[];
+    props: { name: INode; value: INode; }[];
 }
 
 export interface IClassNode extends INode, Privatify<ClassNodeProps> {
@@ -95,15 +143,8 @@ export interface IParseMeta {
 }
 
 export class ParseMeta implements IParseMeta {
-    constructor(public readonly filename: string, public readonly outer: INode, public readonly cache: boolean, public insideExpression = false) {};
+    constructor(public readonly filename: string, public readonly outer: INode, public readonly cache: boolean, public insideExpression = false) { };
     [key: string]: unknown;
-}
-
-export interface IParameterNode {
-    name: string | INode;
-    kind: ParameterNodeKind;
-    default?: INode;
-    _meta?: Record<string, unknown>;
 }
 
 export class ParameterNode {

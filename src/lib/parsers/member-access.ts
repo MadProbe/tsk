@@ -1,50 +1,58 @@
-import { includes } from "../utils/util.js";
-import { Nodes, NodeType, AccessChainItemKind, Tokens, ParseNodeKind } from "../enums";
-import { memberAccessOperators, end_expression } from "../utils/constants.js";
+import { Nodes, AccessChainItemKind, Tokens, ParseNodeKind } from "../enums";
 import { __parse, __used, _parse, parse_operators } from "../parser.js";
-import { advance_next, except_next_token } from "../utils/advancers.js";
+import { MultiValueComparer } from "../utils/comparer.js";
+import { advance_next, assert_next_token } from "../utils/advancers.js";
+import { memberAccessOperators, end_expression } from "../utils/constants.js";
+import { type INode, type ParseMeta, AccessChainItem, PrefixlessSymbolNode, ExpressionWithBodyNode } from "../nodes";
 import type { Token, TokenStream } from "../utils/stream.js";
-import { type INode, type IParseMeta, AccessChainItem } from "../nodes";
 
 
-export function _parseMemberAccess(sym: INode, next: Token, stream: TokenStream, meta: IParseMeta) {
-    const chain = [new AccessChainItem(AccessChainItemKind.Head, sym)];
-    while (next.type === Tokens.Operator && includes(memberAccessOperators, next.body)) {
+const memberAccessOperatorsComparer = new MultiValueComparer(memberAccessOperators);
+export const optionalChainsSet = new WeakSet;
+export function parse_member_access(sym: INode, next: Token, stream: TokenStream, meta: ParseMeta) {
+    const chain = [new AccessChainItem(AccessChainItemKind.Head, sym)], node = ExpressionWithBodyNode(Nodes.MemberAccessExpression, chain);
+    while (next.type === Tokens.Operator && memberAccessOperatorsComparer.includes(next.body)) {
         stream.confirm_try();
-        if (next.body === ".") {
-            chain.push(new AccessChainItem(AccessChainItemKind.Normal, {
-                name: Nodes.SymbolNoPrefix,
-                type: NodeType.Expression,
-                symbol: except_next_token(stream, Tokens.Symbol | Tokens.Keyword).body
-            }));
-        } else if (next.body === "[") {
-            const parsed = __parse(advance_next(stream, end_expression), stream, meta);
-            except_next_token(stream, Tokens.Operator, "]");
-            chain.push(new AccessChainItem(AccessChainItemKind.Computed, parsed));
-        } else if (next.body === "?.") {
-            chain.push(new AccessChainItem(AccessChainItemKind.Optional, {
-                name: Nodes.SymbolNoPrefix,
-                type: NodeType.Expression,
-                symbol: except_next_token(stream, Tokens.Symbol | Tokens.Keyword).body
-            }));
-        } else if (next.body === "?.[") {
-            const parsed = __parse(advance_next(stream, end_expression), stream, meta);
-            except_next_token(stream, Tokens.Operator, "]");
-            chain.push(new AccessChainItem(AccessChainItemKind.OptionalComputed, parsed));
-        } else if (next.body === "!.") {
-            __used.na = true;
-            chain.push(new AccessChainItem(AccessChainItemKind.NormalNullAsserted, {
-                name: Nodes.SymbolNoPrefix,
-                type: NodeType.Expression,
-                symbol: except_next_token(stream, Tokens.Symbol | Tokens.Keyword).body
-            }));
-        } else if (next.body === "!.[") {
-            const parsed = __parse(advance_next(stream, end_expression), stream, meta);
-            except_next_token(stream, Tokens.Operator, "]");
-            __used.na = true;
-            chain.push(new AccessChainItem(AccessChainItemKind.ComputedNullAsserted, parsed));
-        } else {
-            break;
+        switch (next.body) {
+            case ".":
+                chain.push(new AccessChainItem(AccessChainItemKind.Normal, PrefixlessSymbolNode(assert_next_token(stream, Tokens.Symbol | Tokens.Keyword).body)));
+                break;
+
+            case "[": {
+                const parsed = __parse(advance_next(stream, end_expression), stream, meta);
+                assert_next_token(stream, Tokens.Operator, "]");
+                chain.push(new AccessChainItem(AccessChainItemKind.Computed, parsed));
+                break;
+            }
+
+            case "?.":
+                optionalChainsSet.add(node);
+                chain.push(new AccessChainItem(AccessChainItemKind.Optional, PrefixlessSymbolNode(assert_next_token(stream, Tokens.Symbol | Tokens.Keyword).body)));
+                break;
+
+            case "?.[": {
+                optionalChainsSet.add(node);
+                const parsed = __parse(advance_next(stream, end_expression), stream, meta);
+                assert_next_token(stream, Tokens.Operator, "]");
+                chain.push(new AccessChainItem(AccessChainItemKind.OptionalComputed, parsed));
+                break;
+            }
+
+            case "!.":
+                __used.na = true;
+                chain.push(new AccessChainItem(AccessChainItemKind.NormalNullAsserted, PrefixlessSymbolNode(assert_next_token(stream, Tokens.Symbol | Tokens.Keyword).body)));
+                break;
+
+            case "!.[": {
+                const parsed = __parse(advance_next(stream, end_expression), stream, meta);
+                assert_next_token(stream, Tokens.Operator, "]");
+                __used.na = true;
+                chain.push(new AccessChainItem(AccessChainItemKind.ComputedNullAsserted, parsed));
+                break;
+            }
+
+            default:
+                throw RangeError("should never happen");
         }
         try {
             next = stream.try("operator");
@@ -53,12 +61,5 @@ export function _parseMemberAccess(sym: INode, next: Token, stream: TokenStream,
         }
     }
     stream.cancel_try();
-    return chain;
-}
-export function parseMemberAccess(sym: INode, next: Token, stream: TokenStream, meta: IParseMeta) {
-    return parse_operators({
-        name: Nodes.MemberAccessExpression,
-        type: NodeType.Expression,
-        body: _parseMemberAccess(sym, next, stream, meta),
-    }, stream, meta, ParseNodeKind.Expression);
+    return ExpressionWithBodyNode(Nodes.MemberAccessExpression, chain);
 }

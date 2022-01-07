@@ -3,5 +3,5 @@ import type { DiagnosticSeverity } from "../enums";
 
 export interface IDiagnostic {
     readonly severity: DiagnosticSeverity;
-    readonly message: string;
+    readonly message: unknown;
 }

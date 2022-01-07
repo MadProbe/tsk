@@ -1,4 +1,4 @@
-#!/usr/bin/env -S tskc --pretty --out=../build
+// #!/usr/bin/env -S tskc --pretty --out=../build
 "use strict";
 // Include statment includes code from specified file
 // include "./example-module.tsk";
@@ -152,7 +152,7 @@ try {
 {
     try { } finally { }
     try { } else {  }
-    try { } catch { }
+    try { } catch { 0; };
 }
 i = 0;
 while (i < 10) {
@@ -191,7 +191,7 @@ console.log("$$$".replace(/\$?/g,"()"));
         console.log(next.value);
     }
 })();
-(1 + 1 ** 1 + 1);
+(1 + (1 ** 1) + 1);
 
 for range (0 to 5 as i) {
     console.log("i:", i);

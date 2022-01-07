@@ -4,7 +4,7 @@ import { _echo } from "./_echo.js";
 export const memberAccessOperators = [".", "?.", "!.", "!.[", "?.[", "["] as const;
 export const end_expression = "expression";
 export const js_auto_variables = ["__external_var", "this", "arguments", "null", "NaN", "undefined", "Infinity", "true", "false"] as const;
-export const keywords: readonly string[] = _echo("do|if|in|for|new|try|case|else|enum|eval|false|null|this|true|void|with|break|catch|class|const|super|throw|while|yield|delete|export|import|public|return|static|switch|typeof|default|extends|finally|package|private|continue|debugger|arguments|interface|protected|implements|instanceof|include|fn|async|await|undefined|or|and|not|contains|__external|__external_var|nonlocal|keep|using|macro").split("|");
+export const keywords = ["do", "fn", "if", "in", "or", "and", "for", "new", "not", "try", "case", "else", "enum", "eval", "keep", "null", "this", "true", "void", "with", "async", "await", "break", "catch", "class", "const", "false", "macro", "super", "throw", "using", "while", "delete", "yield", "export", "extern", "import", "public", "return", "static", "switch", "typeof", "default", "extends", "finally", "include", "package", "private", "continue", "contains", "debugger", "arguments", "nonlocal", "interface", "__external", "protected", "implements", "instanceof", "undefined", "__external_var"] as const;
 export const validChars = (function () {
     try {
         return Function("return/(?!\\d)[$_\\u200C\\u200D\\p{ID_Continue}]+/yu")() as RegExp;

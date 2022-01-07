@@ -4,7 +4,7 @@ import { undefined } from "../utils/util.js";
 import type { INode } from "../nodes.js";
 
 
-const symbolicCharsRegex = /^[^\s<>\/*+\-?|&\^!%\.@:=\[\]~(){};,"'#]$/m;
+const symbolicCharsRegex = /^[^\ \t\r\f\v\n<>\/*+\-?|&\^!%\.@:=\[\]~(){};,"'#]$/m;
 export function parse_regexp({ text_stream }: TokenStream) {
     function parse_list() {
         while (next !== "]") {
@@ -26,7 +26,7 @@ export function parse_regexp({ text_stream }: TokenStream) {
     function parse_group() {
         while (next !== ")") {
             if (next == undefined) {
-                throw "Unterminated regular expression character list.";
+                throw "Unterminated regular expression group.";
             }
             if (next === "\\") {
                 body += next + text_stream.move();

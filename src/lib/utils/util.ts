@@ -2,19 +2,14 @@ import { js_auto_variables } from "./constants.js";
 import { Nodes, Tokens } from "../enums";
 import type { Token } from "./stream.js";
 import type { INode } from "../nodes";
+import { MultiValueComparer } from "./comparer.js";
 
-export type CallFunctionType = <T extends (...args: any[]) => void>(func: T, thisArg: ThisParameterType<T> | undefined, ...args: Parameters<T>) => ReturnType<T>;
-export type ApplyFunctionType = <T extends (...args: any[]) => void>(func: T, thisArg: ThisParameterType<T> | undefined, args: Parameters<T> | IArguments) => ReturnType<T>;
-export type BindFunctionType = <T extends (...args: any[]) => void>(func: T, thisArg: ThisParameterType<T> | undefined, ...args: Parameters<T> | undefined[]) => T;
-const __call = nullish.call;
-export const bind = __call.bind(nullish.bind) as BindFunctionType;
-export const call = bind(__call, __call as any) as CallFunctionType;
-export const apply = bind(__call, nullish.apply as any) as ApplyFunctionType;
-export type ArrayValueType<T extends readonly any[]> = {
+
+export type ArrayValueType<T extends readonly unknown[]> = {
     [key in Exclude<keyof T, keyof []>]: T[key];
 } extends { [key: string]: infer V; } ? V : never;
-export function includes<A extends readonly any[] | string>(array: A, value: unknown):
-    value is A extends string ? string : any[] extends A ? boolean : ArrayValueType<Exclude<A, string>> {
+export function includes<A extends readonly unknown[] | string>(array: A, value: unknown):
+    value is A extends string ? string : unknown[] extends A ? boolean : ArrayValueType<Exclude<A, string>> {
     return ~array.indexOf(value as never) as never;
 }
 export function nullish(arg: unknown): arg is null | undefined {
@@ -29,9 +24,10 @@ export function resetCounter() {
     __counter__ = 0;
 }
 export function assert_type<T>(value: unknown): asserts value is T { }
-export const isArray: <T>(arg: any) => arg is T[] = Array.isArray || function (value) {
+export const isArray: <T>(arg: unknown) => arg is T[] = Array.isArray || function (value) {
     return value instanceof Array;
 };
+export const frozen: <T>(object: T) => Readonly<T> = object => Object.freeze(Object.setPrototypeOf(object, null));
 interface CacheEntry {
     code: string;
     mtime: number;
@@ -87,11 +83,12 @@ export function include(path: URL, cache = true): string | Promise<string> {
         throw "Unsupported protocol '" + protocol + "'!";
     };
 }
+const autoVariablesComparer = new MultiValueComparer(js_auto_variables);
 export function inspectLog(shit: any) {
     console.log(typeof require === "function" ? require("util").inspect(shit, !0, 1 / 0, !0) : shit);
 }
 export function isSymbol(next: Token) {
-    return next.type === Tokens.Symbol || next.type === Tokens.Keyword && includes(js_auto_variables, next.body);
+    return next.type === Tokens.Symbol || next.type === Tokens.Keyword && autoVariablesComparer.includes(next.body);
 }
 
 export function remove_trailing_undefined(values: INode[]) {
@@ -102,7 +99,7 @@ export function error_unexcepted_token(next: Token, rest = ""): never {
     assert(0, `Unexcepted token '${ next.body }'${ rest }`);
 }
 
-export function except_token(next: Token, token_type: Tokens, token_string?: string, rest = "") {
+export function assert_token(next: Token, token_type: Tokens, token_string?: string, rest = "") {
     if (((next.type & token_type) !== 0) && next.body !== token_string && token_string !== undefined) error_unexcepted_token(next, rest);
     return next;
 }
@@ -119,6 +116,7 @@ export function assert(condition: unknown, message: string | { [Symbol.toPrimiti
  * Checks if expression is an abrupt node ([Node]) and 
  * returns abrupt node with body with abrupted expression
  * else returns node with body equal to passed expression
+ * @deprecated
  */
 export function abruptify(node: INode, expression: INode | [INode]): INode {
     return node;

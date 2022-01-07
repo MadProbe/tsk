@@ -2,8 +2,8 @@ import { AccessChainItemKind, Nodes, NodeType, ParameterNodeKind } from "./enums
 import { occurrences } from "./utils/occurrences.js";
 import { assert_type, includes, random_var_name, undefined } from "./utils/util.js";
 import { _echo } from "./utils/_echo.js";
-import { AccessChainItem, ParameterNode } from "./nodes";
-import type { IClassNode, INode, ITryStatmentNode } from "./nodes";
+import { AccessChainItem, ConstantValueNode, IfStatmentMeta, IfStatmentNode, Node, ParameterNode, PrefixlessSymbolNode, TryStatmentMeta, TryStatmentNode } from "./nodes";
+import type { IClassNode, INode } from "./nodes";
 
 
 var __pretty = true;
@@ -18,7 +18,8 @@ function as_expression(exp: INode): INode {
             body: [{
                 name: exp.outerBody?.name ?? Nodes.FunctionExpression,
                 type: NodeType.Expression,
-                body: [exp]
+                body: [exp],
+                params: []
             }],
             args: []
         };
@@ -52,7 +53,7 @@ function isSimple(node: INode) {
         Nodes.NaNValue,
         Nodes.NullValue,
         Nodes.NumberValue,
-        Nodes.RangeValue,
+        Nodes.RangeExpression,
         Nodes.StringValue,
         Nodes.Symbol,
         Nodes.SymbolNoPrefix,
@@ -138,15 +139,15 @@ function _emit(node: INode, meta: EmitterOptions) {
             __pretty && (___text += " ");
         }
         for (var index = 0, __text = ""; index < nodes.length; index++) {
-            const node = nodes[index], body = node.body, nodeKind = node.kind;
-            if (nodeKind === AccessChainItemKind.Head) {
+            const node = nodes[index], { body, kind } = node;
+            if (kind === AccessChainItemKind.Head) {
                 __text += _emit(isSimple(body) && body.name !== Nodes.NumberValue ? as_expression(body) :
                     ({ name: Nodes.GroupExpression, type: NodeType.Expression, body: [body] }), meta);
-            } else if (nodeKind === AccessChainItemKind.Normal) {
+            } else if (kind === AccessChainItemKind.Normal) {
                 __text += `.${ _emit(body, meta) }`;
-            } else if (nodeKind === AccessChainItemKind.Computed) {
+            } else if (kind === AccessChainItemKind.Computed) {
                 __text += `[${ _emit(body, meta) }]`;
-            } else if (nodeKind === AccessChainItemKind.Optional || nodeKind === AccessChainItemKind.OptionalComputed) {
+            } else if (kind === AccessChainItemKind.Optional || kind === AccessChainItemKind.OptionalComputed) {
                 var randomName = declare(random_var_name()), ___text = `(n(${ randomName }`;
                 sp();
                 ___text += "=";
@@ -159,12 +160,8 @@ function _emit(node: INode, meta: EmitterOptions) {
                 sp();
                 ___text += ":";
                 sp();
-                nodes.splice(0, index, new AccessChainItem(AccessChainItemKind.Head, {
-                    name: Nodes.SymbolNoPrefix,
-                    type: NodeType.Expression,
-                    symbol: randomName
-                }));
-                node.kind = nodeKind === AccessChainItemKind.Optional ?
+                nodes.splice(0, index, new AccessChainItem(AccessChainItemKind.Head, PrefixlessSymbolNode(randomName)));
+                node.kind = kind === AccessChainItemKind.Optional ?
                     AccessChainItemKind.Normal :
                     AccessChainItemKind.Computed;
                 return `${ ___text }${ emitChain(nodes) })`;
@@ -174,7 +171,7 @@ function _emit(node: INode, meta: EmitterOptions) {
                     type: NodeType.Expression,
                     symbol: `__na(${ __text })`
                 }));
-                node.kind = nodeKind === AccessChainItemKind.NormalNullAsserted ?
+                node.kind = kind === AccessChainItemKind.NormalNullAsserted ?
                     AccessChainItemKind.Normal :
                     AccessChainItemKind.Computed;
                 return emitChain(nodes);
@@ -453,10 +450,7 @@ function _emit(node: INode, meta: EmitterOptions) {
                 body: [{
                     name: node.outerBody?.name ?? Nodes.FunctionExpression, // async? generator? function node
                     type: NodeType.Expression,
-                    params: [{
-                        name,
-                        kind: ParameterNodeKind.Normal
-                    }],
+                    params: [new ParameterNode(name, ParameterNodeKind.Normal, undefined)],
                     body: [{
                         name: Nodes.ReturnStatment,
                         type: NodeType.Statment,
@@ -482,7 +476,7 @@ function _emit(node: INode, meta: EmitterOptions) {
             __text += "return " + _emit(as_expression(body[0]), meta);
             break;
 
-        case Nodes.RangeValue:
+        case Nodes.RangeExpression:
             assert_type<[INode, INode]>(body);
             __text += `(function*(){for(var i=${ _emit(body[0], meta) },e=${ _emit(body[1], meta) };i<e;i++)yield i})()`;
             break;
@@ -541,10 +535,10 @@ function _emit(node: INode, meta: EmitterOptions) {
         case Nodes.BitwiseLeftShiftExpression:
         case Nodes.BitwiseRightShiftExpression:
         case Nodes.BitwiseUnsignedRightShiftExpression:
-        case Nodes.LooseComparison:
-        case Nodes.StrictComparison:
-        case Nodes.LooseNegativeComparison:
-        case Nodes.StrictNegativeComparison:
+        case Nodes.LooseEquality:
+        case Nodes.StrictEquality:
+        case Nodes.LooseInequality:
+        case Nodes.StrictInequality:
         case Nodes.LessThanOrEqual:
         case Nodes.GreaterThanOrEqual:
         case Nodes.LessThan:
@@ -558,11 +552,12 @@ function _emit(node: INode, meta: EmitterOptions) {
             break;
 
         case Nodes.IfStatment:
+            assert_type<Node<IfStatmentMeta>>(node);
             assert_type<INode[]>(body);
             __text += "if";
             sp();
             __text += "(";
-            __text += _emit(as_expression(node.args![0]), meta);
+            __text += _emit(as_expression(node.meta.condition), meta);
             __text += ")";
             sp();
             __text += "{";
@@ -573,15 +568,15 @@ function _emit(node: INode, meta: EmitterOptions) {
             li();
             bodyLength && is();
             __text += "}";
-            if (node.else || node.elseif) {
+            if (node.meta.else || node.meta.elseif) {
                 sp();
                 __text += "else";
-                if (node.elseif) {
-                    __text += ` ${ _emit(node.elseif, meta) }`;
+                if (node.meta.elseif) {
+                    __text += ` ${ _emit(node.meta.elseif, meta) }`;
                 } else {
                     sp();
                     __text += "{";
-                    bodyLength = (body = node.else!.body! as INode[]).length;
+                    bodyLength = (body = node.meta.else.body as Node[]).length;
                     bodyLength && nl();
                     ri();
                     emit_body();
@@ -727,52 +722,42 @@ function _emit(node: INode, meta: EmitterOptions) {
             break;
 
         case Nodes.TryStatment:
-            assert_type<ITryStatmentNode>(node);
+            assert_type<Node<TryStatmentMeta>>(node);
             assert_type<INode[]>(body);
             __text += "try";
             sp();
-            namae = node.else ? declare(random_var_name()) : "";
+            namae = node.meta.else ? declare(random_var_name()) : "";
             simple_body_emit(namae ? [{
                 name: Nodes.AssignmentExpression,
                 type: NodeType.Expression,
                 body: [
-                    { name: Nodes.SymbolNoPrefix, type: NodeType.Expression, symbol: namae },
-                    { name: Nodes.TrueValue, type: NodeType.Expression }
+                    PrefixlessSymbolNode(namae),
+                    ConstantValueNode(Nodes.TrueValue)
                 ],
                 symbol: "="
-            } as INode].concat(body || []) : undefined);
-            if (node.catch) {
+            }, ...body] : body);
+            if (node.meta.catch) {
                 sp();
                 __text += "catch";
                 sp();
-                __text += `(${ node.catch[0] ? `$${ node.catch[0] }` : "_" })`;
+                __text += `(${ node.meta.catch.symbol ? `$${ node.meta.catch.symbol }` : "_" })`;
                 sp();
-                simple_body_emit(node.else ? [{
+                simple_body_emit(node.meta.else ? [{
                     name: Nodes.AssignmentExpression,
                     type: NodeType.Expression,
                     body: [
-                        { name: Nodes.SymbolNoPrefix, type: NodeType.Expression, symbol: namae },
-                        { name: Nodes.FalseValue, type: NodeType.Expression }
+                        PrefixlessSymbolNode(namae),
+                        ConstantValueNode(Nodes.FalseValue)
                     ],
                     symbol: "="
-                } as INode].concat(node.catch[1]) : node.catch[1]);
+                }, ...(node.meta.catch.body as Node[] ?? [])] : node.meta.catch.body as Node[]);
             }
-            if (node.finally || namae) {
+            if (node.meta.finally || namae) {
                 sp();
                 __text += "finally";
                 sp();
-
-                simple_body_emit(namae ? [{
-                    name: Nodes.TryStatment,
-                    type: NodeType.Statment,
-                    body: [{
-                        name: Nodes.IfStatment,
-                        type: NodeType.Statment,
-                        body: node.else,
-                        args: [{ name: Nodes.SymbolNoPrefix, type: NodeType.Expression, symbol: namae }]
-                    }],
-                    finally: node.finally || []
-                } as ITryStatmentNode | { else?: INode[], catch?: ITryStatmentNode["catch"]; } as INode] : node.finally);
+                const $if = IfStatmentNode(node.meta.else, node.outerBody as Node, PrefixlessSymbolNode(namae));
+                simple_body_emit(namae ? [TryStatmentNode([$if], undefined!, undefined!, node.meta.finally ?? [], node.outerBody as never)] : node.meta.finally);
             }
             break;
 
@@ -805,7 +790,8 @@ function _emit(node: INode, meta: EmitterOptions) {
 
         case Nodes.ForRangeStatment:
             {
-                const [from, to, as] = node.args as [INode, INode, string];
+                const [from, to, $as] = node.args as [Node, Node, Node];
+                const as = _emit($as, meta);
                 __text += "for";
                 sp();
                 __text += "(var";

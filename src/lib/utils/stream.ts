@@ -18,11 +18,12 @@ export interface TokenStream {
     confirm_try(): void;
     cancel_try(): void;
     readonly text_stream: TextStream;
-    [Symbol.iterator]?(): Iterator<Token>;
+    [Symbol.iterator](): Generator<Token>;
 };
 export class Token {
     constructor(public readonly type: Tokens, public readonly body: string) { }
 }
+/**@deprecated */
 export type TokenList = readonly Token[];
 
 export class Stream implements TextStream {

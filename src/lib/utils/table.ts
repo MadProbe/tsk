@@ -28,10 +28,10 @@ export const CommonOperatorTable = {
     ">=": Nodes.GreaterThanOrEqual,
     "<": Nodes.LessThan,
     "<=": Nodes.LessThanOrEqual,
-    "==": Nodes.LooseComparison,
-    "===": Nodes.StrictComparison,
-    "!=": Nodes.LooseNegativeComparison,
-    "!==": Nodes.StrictNegativeComparison
+    "==": Nodes.LooseEquality,
+    "===": Nodes.StrictEquality,
+    "!=": Nodes.LooseInequality,
+    "!==": Nodes.StrictInequality
 } as const;
 export var AssignmentOperatorTable = {
     "=": Nodes.AssignmentExpression,
@@ -50,5 +50,5 @@ export var AssignmentOperatorTable = {
     "<<=": Nodes.BitwiseLeftShiftAssignmentExpression,
     ">>=": Nodes.BitwiseRightShiftAssignmentExpression,
     ">>>=": Nodes.BitwiseUnsignedRightShiftAssignmentExpression
-}
+} as const;
 

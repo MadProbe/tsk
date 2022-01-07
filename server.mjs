@@ -11,7 +11,8 @@ import { argv, cwd } from "process";
 
 const compressBrotli = promisify(brotliCompress);
 const compressGzip = promisify(gzip);
-const __dirname = cwd();
+const currentDirectoryOverrride = argv.find(x => x.startsWith("--dir="))?.slice(6);
+const __dirname = currentDirectoryOverrride || cwd();
 const content_type_for_ext = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -202,3 +203,4 @@ function handleError(error, stream) {
     }
 }
 
+setTimeout(function self() { setTimeout(self, 1e6) }, 1e6);
