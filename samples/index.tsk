@@ -1,4 +1,4 @@
-// #!/usr/bin/env -S tskc --pretty --out=../build
+#!/usr/bin/env -S tskc --pretty --out=../build
 "use strict";
 // Include statment includes code from specified file
 // include "./example-module.tsk";
