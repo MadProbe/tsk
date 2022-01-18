@@ -16,7 +16,13 @@ const block_node_comparer = new MultiValueComparer([
     Nodes.KeepStatment,
     Nodes.CodeBlock,
     Nodes.TryStatment,
-    Nodes.IfStatment
+    Nodes.IfStatment,
+    Nodes.DoWhileStatment,
+    Nodes.WhileStatment,
+    Nodes.ForOfStatment,
+    Nodes.ForRangeStatment,
+    Nodes.ForStatment,
+    Nodes.NamedIncludeStatment,
 ] as const);
 const simple_node_comparer = new MultiValueComparer([
     Nodes.Array,
@@ -50,8 +56,10 @@ function as_expression(exp: INode): INode {
             name: exp.outerBody?.name ?? Nodes.FunctionExpression,
             type: NodeType.Expression,
             body: [exp],
-            params: []
-        } as never], []);
+            params: [],
+            locals: [],
+            nonlocals: []
+        }], []);
     }
 }
 function isBlockNode(node: INode) {
