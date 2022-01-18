@@ -12,10 +12,10 @@ const operatorCharsComparer = new MultiValueComparer("<>/*+-?|&^!%.@:=[](){};,~#
 const $2charOperatorComparer = new MultiValueComparer($2charoperators);
 const $3charOperatorComparer = new MultiValueComparer($3charoperators);
 const keywordComparer = new MultiValueComparer(keywords);
-const validAfterNumberChars = new MultiValueComparer([...whitespaceCharsComparer, ...operatorCharsComparer, "'" as const, '"' as const]);
 const validIDComparer = new ValidCharsComparer();
 const operatorTokenMap = new Map([...operatorCharsComparer, ...$2charoperators, ...$3charoperators, ">>>=" as const]
     .map(operator => [operator, new Token(Tokens.Operator, operator)]));
+export const validAfterNumberChars = new MultiValueComparer([...whitespaceCharsComparer, ...operatorCharsComparer, "'" as const, '"' as const]);
 
 
 @Prototypeless

@@ -117,7 +117,7 @@ export class FatalError extends Error {
     name = "FatalError";
 }
 
-export function fatal(error: string): never {
+export function fatal<P extends string>(error: P extends `${string}.` ? undefined : P): never {
     throw new FatalError(error); 
 }
 

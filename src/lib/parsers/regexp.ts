@@ -1,15 +1,19 @@
-import { Nodes, NodeType } from "../enums";
 import { TokenStream } from "../utils/stream.js";
-import { undefined } from "../utils/util.js";
-import { INode, RegularExpressionNode } from "../nodes.js";
+import { fatal, nullish, undefined } from "../utils/util.js";
+import { RegularExpressionNode } from "../nodes.js";
+import { MultiValueComparer } from "../utils/comparer.js";
+import { validAfterNumberChars } from "../lexer.js";
+import { pushDiagnostic } from "../parser.js";
+import { DiagnosticSeverity } from "../enums.js";
 
 
-const symbolicCharsRegex = /^[^\ \t\r\f\v\n<>\/*+\-?|&\^!%\.@:=\[\]~(){};,"'#]$/m;
+const validChars = new MultiValueComparer([...validAfterNumberChars, "\\" as const]);
+const validFlags = new MultiValueComparer("dgmuiys");
 export function parse_regexp({ text_stream }: TokenStream) {
     function parse_list() {
         while (next !== "]") {
-            if (next == undefined) {
-                throw "Unterminated regular expression character list.";
+            if (nullish(next)) {
+                fatal("Unterminated regular expression character list");
             }
             if (next === "\\") {
                 body += next + text_stream.move();
@@ -25,8 +29,8 @@ export function parse_regexp({ text_stream }: TokenStream) {
     }
     function parse_group() {
         while (next !== ")") {
-            if (next == undefined) {
-                throw "Unterminated regular expression group.";
+            if (nullish(next)) {
+                fatal("Unterminated regular expression group");
             }
             if (next === "\\") {
                 body += next + text_stream.move();
@@ -42,8 +46,8 @@ export function parse_regexp({ text_stream }: TokenStream) {
     }
     var next: string, body = "/";
     while ((next = text_stream.next) !== "/") {
-        if (next == undefined) {
-            throw "Unterminated regular expression";
+        if (nullish(next)) {
+            fatal("Unterminated regular expression");
         }
         if (next === "\\") {
             body += text_stream.move() + text_stream.move();
@@ -59,10 +63,12 @@ export function parse_regexp({ text_stream }: TokenStream) {
         next = text_stream.move();
     }
     body += text_stream.move();
-    while (text_stream.next != undefined && symbolicCharsRegex.test(text_stream.next)) {
-        if (!/[dgmuiys]/.test(text_stream.next)) throw `Invalid regular expression flag ${ text_stream.next }`;
-        body += text_stream.next;
-        text_stream.move();
+    while (validChars.includes(text_stream.next)) {
+        if (!validFlags.includes(text_stream.next)) {
+            pushDiagnostic(DiagnosticSeverity.Error, `Invalid regular expression flag ${ text_stream.move() }`);
+            break;
+        }
+        body += text_stream.move();
     }
     return RegularExpressionNode(body);
 }
