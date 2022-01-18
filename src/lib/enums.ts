@@ -166,6 +166,7 @@ export const enum Tokens {
     Comment = 0x00000020,
     MultilineComment = 0x00000040,
     Keyword = 0x00000080,
+    /**@deprecated */
     Range = 0x00000100
 }
 export const enum DiagnosticSeverity {
