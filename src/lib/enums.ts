@@ -121,7 +121,8 @@ export const enum Nodes {
     BitwiseRevertExpression,
     PostfixIncrementExpression,
     PostfixDecrementExpression,
-    TernaryExpression
+    TernaryExpression,
+    ThisObject
 }
 export const enum FunctionNodeKind {
     Sync,
@@ -154,9 +155,7 @@ export const enum AccessChainItemKind {
     Normal,
     Computed,
     Optional,
-    OptionalComputed,
-    NormalNullAsserted,
-    ComputedNullAsserted
+    OptionalComputed
 }
 export const enum Tokens {
     String = 0x0000001,

@@ -2,6 +2,10 @@ import { $validIDs } from "./valid-id.js";
 
 
 const s = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+
+export type CharComparerMode = "normal" | "extended";
+
 export interface MultiValueComparer<T> {
     includes(value: unknown): value is T;
     [Symbol.iterator](): IterableIterator<T>;
@@ -28,21 +32,24 @@ class $MultiValueComparer<T> {
 export const MultiValueComparer = $MultiValueComparer as MultiValueComparerConstructor;
 
 export class ValidCharsComparer extends $MultiValueComparer<string> {
-    private validIDs = $validIDs;
+    private _validIDs = $validIDs;
+    private _extended_utf_char_range: Map<string, true> = undefined!;
+    private _normal_utf_char_range = this.values;
+    private _mode: CharComparerMode = "normal";
     public constructor() {
         super(`$0123456789_${ s }${ s.toLowerCase() }`);
-        this.validIDs.splice(0, 6);
+        this._validIDs.splice(0, 6);
         this.init("\uffd7");
     }
     public init(toChar: string) {
         const id = toChar.codePointAt(0)!;
         let deleteCount = 0;
-        for (const element of this.validIDs) {
+        for (const element of this._validIDs) {
             if (element.length === 2) {
                 let [start, end] = element;
                 if (end > id) {
                     for (; start <= id;) this.values.set(String.fromCodePoint(start++), true);
-                    this.validIDs.splice(0, deleteCount);
+                    this._validIDs.splice(0, deleteCount);
                     element[0] = start;
                     return;
                 } else {
@@ -54,8 +61,13 @@ export class ValidCharsComparer extends $MultiValueComparer<string> {
             deleteCount++;
         }
     }
+    public changeMode() {
+
+    }
     /**
      * This method is considered safe because it continues initialization of this comparer and re-compares again if char is not in the values map
+     * @internal
+     * @deprecated
      */
     public safeIncludes(x: string) {
         return this.values.has(x) || (this.init(x), this.values.has(x));

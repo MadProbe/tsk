@@ -14,7 +14,8 @@
         "sourceMap": true,
         "composite": true,
         "tsBuildInfoFile": ".tsbuildinfo",
-        "incremental": true
+        "incremental": true,
+        "experimentalDecorators": true
     },
     "include": ["./src/lib"]
 }

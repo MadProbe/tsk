@@ -6,19 +6,14 @@ import type { Token, TokenStream } from "../utils/stream.js";
 
 
 export function parse_body<P extends string>(stream: TokenStream, meta: IParseMeta, prefix?: Prefix<P>): INode[] {
-    // var next: Token = advance_next(stream, "}", prefix);
     const nodes: INode[] = [];
-    var next: Token
-    //console.log(1123124);
-    while ((next = advance_next(stream, "}", prefix)/*, console.log("next:", next), next*/).type !== Tokens.Operator || next.body !== "}") {
-        // console.log(next);
+    var next: Token;
+    while ((next = advance_next(stream, "}", prefix)).type !== Tokens.Operator || next.body !== "}") {
         try {
-            var _parsed = _parse(next, stream, meta);
+            const _parsed = _parse(next, stream, meta);
             _parsed && nodes.push(_parsed);
-            // next = advance_next(stream, "}", prefix);
         } catch (_e) {
-            pushDiagnostic(DiagnosticSeverity.Error, _e as never, stream);
-            // next = advance_next(stream, "}", prefix);
+            pushDiagnostic(DiagnosticSeverity.Error, _e, stream);
         }
     }
     return nodes;

@@ -15,11 +15,9 @@ export const CommonOperatorTable = {
     "|": Nodes.BitwiseORExpression,
     "??": Nodes.NullishCoalescingExpression,
     "&&": Nodes.LogicalANDExpression,
+    "and": Nodes.LogicalANDExpression,
     "||": Nodes.LogicalORExpression,
     "or": Nodes.LogicalORExpression,
-    "and": Nodes.LogicalANDExpression,
-    // "!": Nodes.LogicalNOTExpresssion, // Leaving this uncommented may lead to fun bugs 
-    // expression ! expression will be parsed without compilation errors LOL
     "<<": Nodes.BitwiseLeftShiftExpression,
     ">>": Nodes.BitwiseRightShiftExpression,
     ">>>": Nodes.BitwiseUnsignedRightShiftExpression,

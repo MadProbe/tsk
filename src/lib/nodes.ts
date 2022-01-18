@@ -1,7 +1,8 @@
 import { Nodes, type ParameterNodeKind, NodeType, type AccessChainItemKind, type ObjectBodyNodeKind } from "./enums";
+import { undefined } from "./utils/util.js";
 
 
-type NodeBody = INode[] | AccessChainItem[] | Record<string, unknown>[] | undefined;
+type NodeBody = INode[] | AccessChainItem[] | undefined;
 export type Writable<T> = { -readonly [K in keyof T]: T[K] };
 
 export interface INodeBase {
@@ -18,6 +19,7 @@ export interface INode extends INodeBase {
     args?: INode[];
     locals?: string[];
     nonlocals?: string[];
+    condition?: INode;
 }
 
 export abstract class BasicMeta {
@@ -49,6 +51,9 @@ export const PrefixlessSymbolNode = (symbol: string) =>
 export const SymbolNode = (symbol: string) =>
     new Node(Nodes.Symbol, NodeType.Expression, undefined, undefined, symbol, undefined);
 
+export const RegularExpressionNode = (symbol: string) =>
+    new Node(Nodes.RegularExpression, NodeType.Expression, undefined, undefined, symbol, undefined);
+
 export const ConstantValueNode = (nodename: Nodes) =>
     new Node(nodename, NodeType.Expression, undefined, undefined, undefined, undefined);
 
@@ -61,6 +66,20 @@ export const NumberNode = (symbol: string) =>
 export const SymbolShortcutNode = (symbol: string) =>
     new Node(Nodes.SymbolShortcut, NodeType.Expression, undefined, undefined, symbol, undefined);
 
+export class NodeWithArgsMeta extends BasicMeta {
+    constructor(public readonly args: Node[]) { super(); }
+}
+
+export const ExpressionWithBodyAndArgsNode = (name: Nodes, body: NodeBody, args: Node[]) =>
+    new Node(name, NodeType.Expression, body, undefined, undefined, new NodeWithArgsMeta(args));
+
+export class NodeWithConditionMeta extends BasicMeta {
+    constructor(public readonly condition: Node) { super(); }
+}
+
+export const StatmentWithBodyAndConditionNode = (name: Nodes, body: NodeBody, condition: Node, outerBody: Node) =>
+    new Node(name, NodeType.Statment, body, outerBody, undefined, new NodeWithConditionMeta(condition));
+
 export class IfStatmentMeta extends BasicMeta {
     public readonly else: Node;
     constructor($else: Node, public readonly elseif: Node, public readonly condition: Node) {
@@ -69,7 +88,7 @@ export class IfStatmentMeta extends BasicMeta {
     }
 }
 
-export const IfStatmentNode = (body: Node[], outer: Node, condition: Node) =>
+export const IfStatmentNode = (body: NodeBody, outer: Node, condition: Node) =>
     new Node(Nodes.IfStatment, NodeType.Statment, body, outer, undefined, new IfStatmentMeta(undefined!, undefined!, condition) as Writable<IfStatmentMeta>);
 
 export class TryStatmentMeta extends BasicMeta {
@@ -84,8 +103,19 @@ export class TryStatmentMeta extends BasicMeta {
     }
 }
 
-export const TryStatmentNode = (body: Node[], $else: Node[], $catch: Node, $finally: Node[], outerBody: Node) =>
+export const TryStatmentNode = (body: NodeBody, $else: Node[], $catch: Node, $finally: Node[], outerBody: Node) =>
     new Node(Nodes.TryStatment, NodeType.Statment, body, outerBody, undefined, new TryStatmentMeta($else, $catch, $finally) as Writable<TryStatmentMeta>);
+
+export const ConstantNodeMap = new Map<string, Node>([
+    ["arguments", ConstantValueNode(Nodes.ArgumentsObject)],
+    ["false", ConstantValueNode(Nodes.FalseValue)],
+    ["Infinity", ConstantValueNode(Nodes.InfinityValue)],
+    ["NaN", ConstantValueNode(Nodes.NaNValue)],
+    ["null", ConstantValueNode(Nodes.NullValue)],
+    ["this", ConstantValueNode(Nodes.ThisObject)],
+    ["true", ConstantValueNode(Nodes.TrueValue)],
+    ["undefined", ConstantValueNode(Nodes.UndefinedValue)],
+] as const);
 
 export interface ClassProperty {
     name: INode;

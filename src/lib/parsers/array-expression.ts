@@ -3,20 +3,13 @@ import { Nodes, NodeType, ParseNodeKind, Tokens } from "../enums";
 import { end_expression } from "../utils/constants.js";
 import { advance_next } from "../utils/advancers.js";
 import { parse_operators, _parse, __parse } from "../parser.js";
-import type { INode, IParseMeta } from "../nodes";
+import { ExpressionWithBodyNode, INode, IParseMeta } from "../nodes";
 import type { Token, TokenStream } from "../utils/stream.js";
 
 
 export function parse_array_expression(stream: TokenStream, meta: IParseMeta) {
     const body: INode[] = [];
-    /**@type {import("./parser").Node}*/
-    const node: INode = {
-        name: Nodes.Array,
-        type: NodeType.Expression,
-        body
-    };
-    var parsed: INode;
-    var next: Token;
+    var parsed: INode, next: Token;
     while (next = advance_next(stream, end_expression)) {
         if (next.type === Tokens.Operator && next.body === ",") {
             body.push({
@@ -37,8 +30,5 @@ export function parse_array_expression(stream: TokenStream, meta: IParseMeta) {
             break;
         }
     }
-    // trailing undefineds are needed here
-    // remove_trailing_undefined(body);
-    parsed = parse_operators(node, stream, meta, ParseNodeKind.Expression);
-    return parsed;
+    return parse_operators(ExpressionWithBodyNode(Nodes.Array, body), stream, meta, ParseNodeKind.Expression);
 }

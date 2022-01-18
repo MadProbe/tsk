@@ -1,5 +1,5 @@
 import { Stream, type TextStream, Token, type TokenStream } from "./utils/stream.js";
-import { error_unexcepted_token, nullish, undefined } from "./utils/util.js";
+import { error_unexcepted_token, fatal, nullish, Prototypeless, undefined } from "./utils/util.js";
 import { DiagnosticSeverity, Tokens } from "./enums";
 import { keywords, $2charoperators, $3charoperators } from "./utils/constants.js";
 import { advance_next, type Prefix } from "./utils/advancers.js";
@@ -18,8 +18,7 @@ const operatorTokenMap = new Map([...operatorCharsComparer, ...$2charoperators, 
     .map(operator => [operator, new Token(Tokens.Operator, operator)]));
 
 
-
-
+@Prototypeless
 class Lexer implements TokenStream {
     public readonly next!: Token;
     _triaged?: Token;
@@ -102,30 +101,19 @@ class Lexer implements TokenStream {
     }
     private _scanChars(result: string) {
         var next: string;
-        while (!nullish(next = this.text_stream.next) && validIDComparer.includes(next)) {
-            this.text_stream.advance();
+        while (!nullish(next = this.text_stream.move()) && validIDComparer.includes(next)) {
             result += next;
         }
         return new Token(keywordComparer.includes(result) ? Tokens.Keyword : Tokens.Symbol, result);
     }
     private _scanSingleQuoteText(): Token {
         var result = "", last = "", next: string;
-        while ((next = this.text_stream.move()) !== "'" || last + next === "\\'") {
-            if (nullish(next)) {
-                throw "Unexcepted EOF";
-            }
-            result += last = next;
-        }
+        while ((next = this.text_stream.move() ?? fatal("Unexcepted EOF")) !== "'" || last === "\\") result += last = next;
         return new Token(Tokens.String, result);
     }
     private _scanDoubleQuoteText(): Token {
         var result = "", last = "", next: string;
-        while ((next = this.text_stream.move()) !== '"' || last + next === '\\"') {
-            if (nullish(next)) {
-                throw "Unexcepted EOF";
-            }
-            result += last = next;
-        }
+        while ((next = this.text_stream.move() ?? fatal("Unexcepted EOF")) !== '"' || last === '\\') result += last = next;
         return new Token(Tokens.String, result);
     }
     private _scanWhitespace(): void {
@@ -202,11 +190,14 @@ class Lexer implements TokenStream {
         this.text_stream.down(1);
         return new Token(Tokens.Number, result);
     }
+    /**
+     * @internal For testing purposes
+     */
+    protected consume() {
+        while (!nullish(this.advance()));
+    }
 };
 
-/**
- * @param {string} text 
- */
 export function lex(text: string): TokenStream {
     return new Lexer(new Stream(text));
 }

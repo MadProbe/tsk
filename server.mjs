@@ -88,7 +88,7 @@ createSecureServer({
     key: await readFile(new URL(await import.meta.resolve("./server.key")))
 }, (req, res) => {
     const { httpVersion } = req;
-    if (httpVersion !== '2.0') {
+    if (httpVersion !== "2.0") {
         return http1RequestProcessor(req, res);
     }
 }).on("stream", async (stream, headers) => {
@@ -162,11 +162,11 @@ async function readSaved(handle, path) {
             read = buffer;
         }
         headers = {
-            ':status': 200,
+            ":status": 200,
             "access-control-allow-origin": "*",
-            'content-type': uncompressable_files[ext],
-            'content-length': `${stats.size}`,
-            'content-security-policy': CSPPolicy
+            "content-type": uncompressable_files[ext],
+            "content-length": `${stats.size}`,
+            "content-security-policy": CSPPolicy
         };
     } else {
         const { mtime, buffer } = $cache3[path] ?? {};
@@ -179,12 +179,12 @@ async function readSaved(handle, path) {
             read = buffer;
         }
         headers = {
-            ':status': 200,
+            ":status": 200,
             "access-control-allow-origin": "*",
-            'content-type': `${content_type_for_ext[ext] ?? 'text/plain'}; charset=utf-8`,
-            'content-length': `${stats.size}`,
-            'content-encoding': 'br',
-            'content-security-policy': CSPPolicy
+            "content-type": `${content_type_for_ext[ext] ?? "text/plain"}; charset=utf-8`,
+            "content-length": `${stats.size}`,
+            "content-encoding": "br",
+            "content-security-policy": CSPPolicy
         };
     }
     return { read, headers };

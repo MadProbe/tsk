@@ -2,7 +2,7 @@ import typescript from 'rollup-plugin-typescript2';
 import { terser } from 'rollup-plugin-terser';
 
 
-const plugin_terser = terser({ format: { comments: false }, mangle: true, compress: true });
+const plugin_terser = terser({ format: { comments: false }, mangle: { toplevel: true, module: true }, compress: { passes: 4, unsafe_undefined: true } });
 export default {
     onwarn(warning) {
         if (warning.code !== 'CIRCULAR_DEPENDENCY') {
@@ -40,7 +40,7 @@ export default {
                 file: './build/bundle.min.mjs',
                 format: 'esm',
                 sourcemap: true,
-                plugins: [plugin_terser],
+                plugins: [plugin_terser]
             }, {
                 file: './build/bundle.min.cjs',
                 exports: "named",

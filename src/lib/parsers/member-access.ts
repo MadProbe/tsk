@@ -2,12 +2,13 @@ import { Nodes, AccessChainItemKind, Tokens, ParseNodeKind } from "../enums";
 import { __parse, __used, _parse, parse_operators } from "../parser.js";
 import { MultiValueComparer } from "../utils/comparer.js";
 import { advance_next, assert_next_token } from "../utils/advancers.js";
-import { memberAccessOperators, end_expression } from "../utils/constants.js";
+import { member_access_operators, end_expression } from "../utils/constants.js";
 import { type INode, type ParseMeta, AccessChainItem, PrefixlessSymbolNode, ExpressionWithBodyNode } from "../nodes";
 import type { Token, TokenStream } from "../utils/stream.js";
+import { should_not_happen } from "../utils/util.js";
 
 
-const memberAccessOperatorsComparer = new MultiValueComparer(memberAccessOperators);
+const memberAccessOperatorsComparer = new MultiValueComparer(member_access_operators);
 export const optionalChainsSet = new WeakSet;
 export function parse_member_access(sym: INode, next: Token, stream: TokenStream, meta: ParseMeta) {
     const chain = [new AccessChainItem(AccessChainItemKind.Head, sym)], node = ExpressionWithBodyNode(Nodes.MemberAccessExpression, chain);
@@ -38,21 +39,8 @@ export function parse_member_access(sym: INode, next: Token, stream: TokenStream
                 break;
             }
 
-            case "!.":
-                __used.na = true;
-                chain.push(new AccessChainItem(AccessChainItemKind.NormalNullAsserted, PrefixlessSymbolNode(assert_next_token(stream, Tokens.Symbol | Tokens.Keyword).body)));
-                break;
-
-            case "!.[": {
-                const parsed = __parse(advance_next(stream, end_expression), stream, meta);
-                assert_next_token(stream, Tokens.Operator, "]");
-                __used.na = true;
-                chain.push(new AccessChainItem(AccessChainItemKind.ComputedNullAsserted, parsed));
-                break;
-            }
-
             default:
-                throw RangeError("should never happen");
+                should_not_happen();
         }
         try {
             next = stream.try("operator");

@@ -19,5 +19,5 @@ export function parse_object_expression(stream: TokenStream, meta: IParseMeta): 
         recursive_attrs(stream, next, meta, []);
     }
     assert_token(next, Tokens.Operator, "}");
-    return node;
+    return node as never;
 }

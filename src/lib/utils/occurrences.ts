@@ -1,4 +1,4 @@
-// Adopted to ts by MadProbe#7435
+// Adopted to ts and removed unneeded functionality by MadProbe#7435
 // All credits goes to Vitim.us 
 // @see {https://gist.github.com/victornpb/7736865}
 /** Function that count occurrences of a substring in a string;
@@ -10,18 +10,13 @@
  * @see Unit Test https://jsfiddle.net/Victornpb/5axuh96u/
  * @see https://stackoverflow.com/questions/4009756/how-to-count-string-occurrence-in-string/7924240#7924240
  */
-export function occurrences(string: string, subString: string, allowOverlapping?: boolean): number {
-    string += "";
-    subString += "";
-    if (subString.length <= 0) return (string.length + 1);
-
+export function occurrences(string: string, subString: string): number {
     var n = 0,
-        pos = 0,
-        step = allowOverlapping ? 1 : subString.length;
+        pos = 0;
 
     while ((pos = string.indexOf(subString, pos)) >= 0) {
         ++n;
-        pos += step;
+        ++pos;
     }
     return n;
 }

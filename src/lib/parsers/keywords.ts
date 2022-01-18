@@ -1,25 +1,25 @@
 import {
     isArray, include, undefined, SyntaxError, random_var_name, includes,
-    error_unexcepted_token, assert_type, assert_token
+    error_unexcepted_token, assert_type, assert_token, fatal, auto_variables_comparer, should_not_happen
 } from "../utils/util.js";
 import { _echo } from "../utils/_echo.js";
 import { FunctionNodeKind, Nodes, ParameterNodeKind, NodeType, AccessChainItemKind, Tokens, DiagnosticSeverity } from "../enums";
 import { lex } from "../lexer.js";
-import { memberAccessOperators, end_expression } from "../utils/constants.js";
+import { member_access_operators, end_expression, auto_variables } from "../utils/constants.js";
 import { parse_member_access } from "./member-access.js";
 import { advance_next, assert_next_token } from "../utils/advancers.js";
 import { parse_body, parse_next_body } from "./body-parser.js";
-import { __cache, main_parse, promises, _parse, __parse, __used, _parse_and_assert_last_token, pushDiagnostic } from "../parser.js";
+import { __cache, main_parse, promises, _parse, __parse, __used, parse_and_assert_last_token, pushDiagnostic, parse_expression } from "../parser.js";
 import { __external_var_creator } from "./external-var.js";
 import { parse_call_expression } from "./call-expression.js";
-import { type INode, type IClassNode, type AccessChainItem, ParseMeta, ParameterNode, Node, SymbolNode, StatmentWithBodyNode, TryStatmentNode, Writable, IfStatmentNode, ExpressionWithBodyNode, PrefixlessSymbolNode, ExpressionWithBodyAndOuterNode } from "../nodes";
+import { type INode, type IClassNode, AccessChainItem, ParseMeta, ParameterNode, Node, SymbolNode, StatmentWithBodyNode, TryStatmentNode, Writable, IfStatmentNode, ExpressionWithBodyNode, PrefixlessSymbolNode, ExpressionWithBodyAndOuterNode, ExpressionWithBodyAndArgsNode, ConstantNodeMap } from "../nodes";
 import type { TokenStream } from "../utils/stream.js";
 import { MultiValueComparer } from "../utils/comparer.js";
 
 
 type KeywordParsers = Readonly<Record<string, (stream: TokenStream, meta: ParseMeta, ...args: readonly unknown[]) => Readonly<INode>>>;
 const try_phrases = new MultiValueComparer(["catch", "else", "finally"]);
-const keepStatmentStuff = [',', ')'].join('" | "') + memberAccessOperators.join('" | "');
+const keepStatmentStuff = [',', ')'].join('" | "') + member_access_operators.join('" | "');
 const awaitOps = ['any', 'all', 'allSettled', 'race'];
 const awaitOpsComparer = new MultiValueComparer(awaitOps);
 const awaitOpsJoined = awaitOps.join('" | "');
@@ -82,7 +82,7 @@ export const keywords_handlers = {
      */
     if(stream, meta) {
         assert_next_token(stream, Tokens.Operator, "(");
-        var expression = _parse_and_assert_last_token(stream, meta, Tokens.Operator, ")"), expressions: INode[];
+        var expression = parse_and_assert_last_token(stream, meta, Tokens.Operator, ")"), expressions: INode[];
         var next = advance_next(stream, "{");
         if (next.type === Tokens.Operator && next.body === "{") {
             expressions = parse_body(stream, meta);
@@ -193,7 +193,6 @@ export const keywords_handlers = {
         var name = "";
         var params: ParameterNode[] = [];
         var next = advance_next(stream, 'symbol" | "(', prefix);
-        var paramType: ParameterNodeKind;
         var hasRest = false;
         var index: number;
         if (next.type === Tokens.Operator && next.body === "*") {
@@ -210,7 +209,7 @@ export const keywords_handlers = {
             name = next.body;
             next = advance_next(stream, "(", prefix);
         }
-        if (next.type !== Tokens.Operator && next.body !== "(") {
+        if (next.type !== Tokens.Operator || next.body !== "(") {
             error_unexcepted_token(next);
         }
         const node: INode = {
@@ -223,7 +222,7 @@ export const keywords_handlers = {
         };
         const innerMeta = new ParseMeta(meta.filename, node, meta.cache);
         for (; ;) {
-            paramType = ParameterNodeKind.Normal;
+            var paramType = ParameterNodeKind.Normal;
             next = advance_next(stream, "symbol", prefix);
             if (next.type === Tokens.Operator && next.body === ",") {
                 params.push(new ParameterNode("", ParameterNodeKind.Empty, undefined));
@@ -249,7 +248,7 @@ export const keywords_handlers = {
 
                 if (next.type === Tokens.Operator && next.body === ")") {
                     break;
-                } else if (next.type !== Tokens.Operator && next.body !== ",") {
+                } else if (next.type !== Tokens.Operator || next.body !== ",") {
                     error_unexcepted_token(next);
                 }
             } else if (next.type === Tokens.Operator && next.body === ",") {
@@ -263,11 +262,10 @@ export const keywords_handlers = {
         index = params.length;
         for (; index && params[--index].kind === ParameterNodeKind.Empty;)
             params.pop();
-        // apply(console.log, console, params); // IE 8 is very old and strange shit
         next = advance_next(stream, "{", prefix);
         if (next.type === Tokens.Operator && next.body === "=>") {
             next = advance_next(stream, end_expression, prefix);
-            if (next.type !== Tokens.Operator && next.body !== "{") {
+            if (next.type !== Tokens.Operator || next.body !== "{") {
                 innerMeta.insideExpression = true;
                 node.body = [StatmentWithBodyNode(Nodes.ReturnStatment, [_parse(next, stream, innerMeta)], node)];
                 return node;
@@ -278,8 +276,9 @@ export const keywords_handlers = {
         return node;
     },
     class(stream, meta) {
+        (fatal("TODO: Finish implementation of classes after i finish the unification node objects and regular objects"));
         const type = meta.insideExpression ? NodeType.Expression : NodeType.Statment;
-        const node: IClassNode = {
+        const node = {
             name: Nodes.ClassExpression,
             type,
             getters: [],
@@ -292,7 +291,7 @@ export const keywords_handlers = {
             privateProps: [],
             mixins: [],
             outerBody: meta.outer
-        };
+        } as IClassNode;
         const prefix = "Class expression:";
         var next = advance_next(stream, ["{", "symbol", "extends"].join('" | "'), prefix);
         if (next.type === Tokens.Symbol) {
@@ -328,12 +327,7 @@ export const keywords_handlers = {
                         }
                 }
             }
-            // next = next_and_skip_shit_or_fail(stream, "}", prefix);
-            // if (next[0] !== Tokens.Special || next[1] !== "}") {
-            //     error_unexcepted_token(next);
-            // }
-        } else
-            error_unexcepted_token(next);
+        } else error_unexcepted_token(next);
         return node;
     },
     return(stream, meta) {
@@ -362,17 +356,12 @@ export const keywords_handlers = {
         if (next.type === Tokens.Operator && next.body === ".") {
             next = advance_next(stream, awaitOpsJoined, prefix);
             if (next.type === Tokens.Symbol && awaitOpsComparer.includes(next.body)) {
-                var expression: INode = {
-                    name: Nodes.CallExpression,
-                    type: NodeType.Expression,
-                    body: [PrefixlessSymbolNode(`p.${ next.body }`)],
-                    args: [_parse(advance_next(stream, end_expression, prefix), stream, meta)]
-                };
+                var expression = ExpressionWithBodyAndArgsNode(Nodes.CallExpression, [PrefixlessSymbolNode(`p.${ next.body }`)], [parse_expression(stream, meta, prefix) as Node]);
             } else {
                 error_unexcepted_token(next);
             }
         } else {
-            expression = _parse(next, stream, meta);
+            expression = _parse(next, stream, meta) as never;
         }
         return ExpressionWithBodyAndOuterNode(Nodes.AwaitExpression, [expression], meta.outer as Node);
     },
@@ -384,58 +373,47 @@ export const keywords_handlers = {
         const args: INode[] = [];
         assert_next_token(stream, Tokens.Operator, "(");
         var next = advance_next(stream, "symbol", prefix);
-        // ???
-        if (next.type === Tokens.Operator || next.body !== ")") {
-            while (1) {
-                if (next.type === Tokens.Operator && next.body === ")") {
-                    break;
-                }
-                if (next.type === Tokens.Operator && next.body === ",") {
-                    next = advance_next(stream, end_expression);
-                    continue;
-                } else {
-                    var next2, isConstantObject = next.type === Tokens.Keyword && includes(["this", "arguments"] as const, next.body),
-                        arg: INode = (isConstantObject ? keywords_handlers[next.body]() : {
-                            name: Nodes.Symbol,
-                            type: NodeType.Expression,
-                            symbol: next.body
-                        });
-                    if (!(isConstantObject || next.type === Tokens.Symbol)) {
-                        error_unexcepted_token(next);
-                    }
-                    next2 = advance_next(stream, keepStatmentStuff, prefix);
-                    if (next2.type === Tokens.Operator && includes(memberAccessOperators, next2.body)) {
-                        arg = parse_member_access(arg, next, stream, meta);
-                    } else {
-                        isConstantObject && pushDiagnostic(DiagnosticSeverity.RuntimeError, `Assignment to "${ next.type }" will fail at runtime!`, stream);
-                        next = next2;
-                    }
-                }
-                args.push(arg);
-                if (next.type === Tokens.Operator) {
-                    if (next.body === ")") {
-                        break;
-                    } else if (next.body !== ",") {
-                        error_unexcepted_token(next);
-                    }
-                } else
+        while (next.type !== Tokens.Operator || next.body !== ")") {
+            if (next.type === Tokens.Operator && next.body === ",") {
+                next = advance_next(stream, end_expression);
+                continue;
+            } else {
+                var next2, isConstantObject = next.type === Tokens.Keyword && auto_variables_comparer.includes(next.body),
+                    arg: INode = isConstantObject ? ConstantNodeMap.get(next.body) ?? should_not_happen() : SymbolNode(next.body);
+                if (!(isConstantObject || next.type === Tokens.Symbol)) {
                     error_unexcepted_token(next);
-                next = advance_next(stream, "symbol");
+                }
+                next2 = advance_next(stream, keepStatmentStuff, prefix);
+                if (next2.type === Tokens.Operator && includes(member_access_operators, next2.body)) {
+                    arg = parse_member_access(arg, next, stream, meta);
+                } else {
+                    isConstantObject && pushDiagnostic(DiagnosticSeverity.RuntimeError, `Assignment to "${ next.type }" will fail at runtime!`, stream);
+                    next = next2;
+                }
             }
+            args.push(arg);
+            if (next.type === Tokens.Operator) {
+                if (next.body === ")") {
+                    break;
+                } else if (next.body !== ",") {
+                    error_unexcepted_token(next);
+                }
+            } else
+                error_unexcepted_token(next);
+            next = advance_next(stream, "symbol");
         }
-        assert_next_token(stream, Tokens.Operator, "{", prefix);
         return {
             name: Nodes.KeepStatment,
             type: NodeType.Statment,
-            body: parse_body(stream, meta),
+            body: parse_next_body(stream, meta),
             args,
             outerBody: meta.outer
         } as INode;
     },
     new(stream, meta) {
-        const expression = __parse(advance_next(stream, end_expression), stream, meta);
+        const expression = parse_expression(stream, meta);
         // The logic is to intercept from parsed node last CallExpression and mutate it into NewExpression
-        const node: INode = { name: Nodes.NewExpression, type: NodeType.Expression, body: [expression] }, intercepted: INode[] = [];
+        const node: INode = ExpressionWithBodyNode(Nodes.NewExpression, [expression]), intercepted: INode[] = [];
         var body = expression.body, expression_ = expression;
         while (expression_.type === NodeType.Expression && isArray(body)) {
             expression_ = (body[0] as INode).name ? body[0] as INode : (body[0] as AccessChainItem).body;
@@ -450,10 +428,7 @@ export const keywords_handlers = {
                 if (expressionAbove.name !== Nodes.MemberAccessExpression) {
                     (expressionAbove.body as INode[])[0] = node;
                 } else {
-                    (expressionAbove.body as AccessChainItem[])[0] = {
-                        body: node,
-                        kind: AccessChainItemKind.Head
-                    };
+                    (expressionAbove.body as AccessChainItem[])[0] = new AccessChainItem(AccessChainItemKind.Head, node);
                 }
                 return expression;
             }
@@ -498,7 +473,7 @@ export const keywords_handlers = {
     while(stream, meta) {
         const prefix = "While statment:";
         assert_next_token(stream, Tokens.Operator, "(", prefix);
-        const arg = _parse_and_assert_last_token(stream, meta, Tokens.Operator, ")", prefix);
+        const arg = parse_and_assert_last_token(stream, meta, Tokens.Operator, ")", prefix);
         return {
             name: Nodes.WhileStatment,
             type: NodeType.Statment,
@@ -516,7 +491,7 @@ export const keywords_handlers = {
             name: Nodes.DoWhileStatment,
             type: NodeType.Statment,
             body,
-            args: [_parse_and_assert_last_token(stream, meta, Tokens.Operator, ")", prefix)],
+            args: [parse_and_assert_last_token(stream, meta, Tokens.Operator, ")", prefix)],
             outerBody: meta.outer
         };
     },
@@ -541,8 +516,8 @@ export const keywords_handlers = {
             name: Nodes.ForRangeStatment,
             type: NodeType.Statment,
             args: [
-                _parse_and_assert_last_token(stream, meta, Tokens.Keyword, "to"),
-                _parse_and_assert_last_token(stream, meta, Tokens.Keyword, "as"),
+                parse_and_assert_last_token(stream, meta, Tokens.Keyword, "to"),
+                parse_and_assert_last_token(stream, meta, Tokens.Keyword, "as"),
                 SymbolNode(assert_next_token(stream, Tokens.Symbol, undefined, "For statment:").body)
             ],
             body: (assert_next_token(stream, Tokens.Operator, ")", "For statment:"), parse_next_body(stream, meta)),

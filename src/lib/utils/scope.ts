@@ -1,4 +1,5 @@
-import { Node } from "../nodes.js";
+import { undefined } from "./util.js";
+import type { Node } from "../nodes.js";
 
 
 export class Scope<Global extends boolean = false> {
