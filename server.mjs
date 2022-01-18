@@ -14,6 +14,7 @@ const compressGzip = promisify(gzip);
 const currentDirectoryOverrride = argv.find(x => x.startsWith("--dir="))?.slice(6);
 const __dirname = currentDirectoryOverrride || cwd();
 const content_type_for_ext = {
+    ".md": "text/markdown",
     ".html": "text/html",
     ".js": "application/javascript",
     ".mjs": "application/javascript",
@@ -21,7 +22,7 @@ const content_type_for_ext = {
     ".css": "text/css",
     ".map": "application/json",
     ".json": "application/json",
-    ".webmanifest": "application/json",
+    ".webmanifest": "application/json"
 };
 const uncompressable_files = {
     ".ico": "image/png",
@@ -66,6 +67,7 @@ const http1RequestProcessor = async (req, res) => {
             mtime: stats.mtimeNs
         }).compressed;
         res.setHeader("Content-Type", contentTypeFromExt(ext));
+        res.setHeader("Content-Length", Number(stats.size));
         if (!uncompressable_files[ext]) {
             res.setHeader("Content-Encoding", "gzip");
         }
@@ -85,7 +87,8 @@ createServer(http1RequestProcessor).listen(settings?.http1?.port || port || 80);
 
 createSecureServer({
     cert: await readFile(new URL(await import.meta.resolve("./server.crt"))),
-    key: await readFile(new URL(await import.meta.resolve("./server.key")))
+    key: await readFile(new URL(await import.meta.resolve("./server.key"))),
+    allowHTTP1: true
 }, (req, res) => {
     const { httpVersion } = req;
     if (httpVersion !== "2.0") {
