@@ -4,10 +4,11 @@ src
 build/tsconfig.tsbuildinfo
 build/deps
 build/out
-*.map
+bundle.js.map
+bundle.cjs.map
+bundle.min.js.map
 bundle.js
 bundle.cjs
-bundle.mjs
 bundle.min.js
 samples
 index.js
@@ -17,5 +18,7 @@ syntax.md
 .babelrc
 package-lock.json
 *.tgz
+*.7z
 node_modules
 tsconfig.json
+rollup.config.js

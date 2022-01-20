@@ -1,38 +1,24 @@
-import { Nodes, NodeType, AccessChainItemKind, DiagnosticSeverity } from "../enums";
-import { AssignmentOperatorTable, AssignmentOperatorTableKeys } from "../utils/table.js";
-import { Diagnostic } from "../utils/diagnostics.js";
+import { Nodes, DiagnosticSeverity } from "../enums";
+import { AssignmentOperatorTable, type AssignmentOperatorTableKeys } from "../utils/table.js";
 import { end_expression } from "../utils/constants.js";
 import { advance_next } from "../utils/advancers.js";
-import { diagnostics, _parse } from "../parse-dummies.js";
+import { pushDiagnostic, _parse } from "../parser.js";
+import { INode, type ParseMeta, ExpressionWithBodyAndSymbolNode } from "../nodes";
+import { optionalChainsSet } from "./member-access.js";
 import type { Token, TokenStream } from "../utils/stream.js";
-import type { Node, ParseMeta, AccessChainItem } from "../nodes";
 
-export function parse_assignment(_sym: Node, next: Token, stream: TokenStream, meta: ParseMeta): Node | undefined {
-    if (name = AssignmentOperatorTable[next[1] as AssignmentOperatorTableKeys] as Nodes | undefined) {
-        if (_sym.name === Nodes.MemberAccessExpression) {
-            var body = _sym.body!;
-            var length = body.length;
-            var name: Nodes | undefined, parsed: Node, node: Node;
-            for (var index = 0, item: AccessChainItem; index < length; index++) {
-                item = body[index] as AccessChainItem;
-                if (item.kind === AccessChainItemKind.Optional || item.kind === AccessChainItemKind.OptionalComputed) {
-                    diagnostics.push(Diagnostic(DiagnosticSeverity.RuntimeError,
-                        `The left-hand side of an assignment expression may not be an optional property access.`));
-                }
-            }
+
+export function parse_assignment(_sym: INode, next: Token, stream: TokenStream, meta: ParseMeta): INode | undefined {
+    var name: Nodes | undefined;
+    if (name = AssignmentOperatorTable[next.body as AssignmentOperatorTableKeys]) {
+        if (optionalChainsSet.has(_sym)) {
+            pushDiagnostic(DiagnosticSeverity.RuntimeError, `The left-hand side of an assignment expression may not be an optional property access.`, stream);
         }
-        parsed = _parse(advance_next(stream, end_expression), stream, meta) as Node;
-        node = {
-            name,
-            type: NodeType.Expression,
-            body: [_sym, parsed],
-            symbolName: next[1]
-        };
         if (_sym.name !== Nodes.MemberAccessExpression &&
-            !~meta.outer.locals!.indexOf(_sym.symbolName!) &&
-            !~(meta.outer.nonlocals?.indexOf(_sym.symbolName!) ?? -1)) {
-            meta.outer.locals!.push(_sym.symbolName!);
+            !~meta.outer.locals!.indexOf(_sym.symbol!) &&
+            !~(meta.outer.nonlocals?.indexOf(_sym.symbol!) ?? -1)) {
+            meta.outer.locals!.push(_sym.symbol!);
         }
-        return node;
+        return ExpressionWithBodyAndSymbolNode(name, [_sym, _parse(advance_next(stream, end_expression), stream, meta)], next.body);
     }
 }

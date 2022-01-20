@@ -3,36 +3,34 @@
 	"version": "0.2.0",
 	"description": "Compiler for TSK programming language",
 	"author": "MadProbe#7435",
-	"license": "ISC",
+	"license": "MIT",
+	"main": "build/bundle.min.cjs",
+	"module": "build/bundle.min.mjs",
 	"exports": {
 		".": {
 			"import": "./build/bundle.min.mjs",
 			"browser": "./build/bundle.min.mjs",
+			"import-non-minified": "./build.mjs",
 			"require": "./build/bundle.min.cjs"
 		}
 	},
 	"type": "module",
-	"bin": {
-		"tskc": "build/tskc.js"
-	},
-	"types": "./build/out/lib/compiler.d.ts",
+	"bin": "build/tskc.mjs",
+	"types": "build/decls/lib/compiler.d.ts",
 	"devDependencies": {
-		"@babel/cli": "^7.13.10",
-		"@babel/core": "^7.13.10",
-		"@rollup/plugin-babel": "^5.3.0",
-		"@rollup/plugin-typescript": "^8.2.0",
-		"@types/node": "^14.14.35",
-		"babel-preset-minify": "^0.5.1",
-		"rollup": "^2.42.3",
-		"tslib": "^2.1.0",
-		"typescript": "^4.3.0-dev.20210323"
+		"@types/node": "^17.0.5",
+		"rollup": "^2.60.1",
+		"rollup-plugin-terser": "^7.0.2",
+		"rollup-plugin-typescript2": "^0.31.1",
+		"tslib": "^2.3.1",
+		"typescript": "^4.5.2"
 	},
 	"peerDependencies": {
 		"node-fetch": "^2.6.1"
 	},
 	"scripts": {
-		"build": "rollup -c && tsc src/bin/tskc.ts --outDir build -t es2018 -m esnext",
-		"update": "npm i --legacy-peer-deps -D @rollup/plugin-typescript@latest @rollup/plugin-babel@latest @babel/cli@latest @babel/core@latest @types/node@latest babel-preset-minify@latest typescript@next rollup@latest tslib@latest",
+		"build": "rollup -c && tsc -p src/bin/tsconfig.json",
+		"update": "npm i --legacy-peer-deps -D rollup-plugin-typescript2@latest @rollup/plugin-babel@latest @babel/cli@latest @babel/core@latest @types/node@latest babel-preset-minify@latest typescript@latest rollup@latest tslib@latest",
 		"start": "node server.js",
 		"globalinstall": "npm pack && npm install -g ./tskc-0.2.0.tgz",
 		"clearbuild": "rm -rf build/out build/bundle.*",
@@ -43,7 +41,8 @@
 		"url": "git+https://github.com/MadProbe/tsk.git"
 	},
 	"bugs": {
-		"url": "https://github.com/MadProbe/tsk/issues"
+		"url": "https://github.com/MadProbe/tsk/issues",
+		"discord": "https://discord.gg/5dPuBvZjjx"
 	},
 	"homepage": "https://github.com/MadProbe/tsk#readme"
 }

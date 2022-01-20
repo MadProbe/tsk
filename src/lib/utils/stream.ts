@@ -1,36 +1,53 @@
+import { Prototypeless } from "./util.js";
 import type { Tokens } from "../enums";
+import type { Prefix } from "./advancers.js";
 
-type Streamable = {
-    [index: number]: any;
-};
-type ValueType<A extends Streamable> = A extends { [index: number]: infer P; } ? P : never;
-export interface ValueStream<T extends Streamable> {
-    next: ValueType<T>;
-    move(): ValueType<T>;
-    down(): ValueType<T>;
+
+export interface TextStream {
+    readonly text: string;
+    index: number;
+    next: string;
+    move(): string;
+    advance(): string;
+    down(times: number): string;
 }
-export type TextStream = ValueStream<string>;
-export type TokenStream = ValueStream<TokenList>;
-export type Token = [Tokens, string, ...string[]];
-export type TokenList = Token[];
+export interface TokenStream {
+    readonly next: Token;
+    move(): Token;
+    advance(): Token;
+    try<P extends string>(end: string, prefix?: Prefix<P>): Token;
+    confirm_try(): void;
+    cancel_try(): void;
+    readonly text_stream: TextStream;
+    [Symbol.iterator](): Generator<Token>;
+};
+@Prototypeless
+export class Token {
+    constructor(public readonly type: Tokens, public readonly body: string) { }
+    is(type: Tokens, body: string) {
+        return (this.type & type) !== 0 && this.body === body;
+    }
+}
+/**@deprecated */
+export type TokenList = readonly Token[];
 
-/**
- * @template {import("./stream").Streamable} T
- * @param {T} streamable 
- * @returns {T}
- */
-export function Stream<T extends Streamable>(streamable: T): ValueStream<T> {
-    var __index = 0;
-    return {
-        next: streamable[0],
-        /**@param {any} [__next]*/
-        move(__next?: any) {
-            __next = streamable[__index++];
-            this.next = streamable[__index];
-            return __next;
-        },
-        down() {
-            return this.next = streamable[--__index];
-        }
+
+@Prototypeless
+export class Stream implements TextStream {
+    public index: number = 0;
+    public next: string;
+    constructor(public readonly text: string) {
+        this.next = text[0];
+    }
+    advance() {
+        return this.next = this.text[++this.index];
+    }
+    move() {
+        const __next = this.text[this.index];
+        this.next = this.text[++this.index];
+        return __next!;
+    }
+    down(times: number) {
+        return this.next = this.text[this.index -= times];
     }
 }

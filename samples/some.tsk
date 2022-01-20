@@ -4,7 +4,7 @@ console = __external_var("console");
 fn to_word(val) {
     v = val % 10;
     if (v == 1) { return "рубль"; }
-    else if (v == 2) { return "рубля"; }
+    else if (v == 2 or v == 3 or v == 4) { return "рубля"; }
     else { return "рублей"; }
 }
 

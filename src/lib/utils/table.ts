@@ -1,10 +1,9 @@
 import { Nodes } from "../enums";
 
-export type CommonOperatorTableType = typeof CommonOperatorTable;
-export type CommonOperatorTableKeys = keyof CommonOperatorTableType;
-export type AssignmentOperatorTableType = typeof AssignmentOperatorTable;
-export type AssignmentOperatorTableKeys = keyof AssignmentOperatorTableType;
-export var CommonOperatorTable = {
+
+export type CommonOperatorTableKeys = keyof typeof CommonOperatorTable;
+export type AssignmentOperatorTableKeys = keyof typeof AssignmentOperatorTable;
+export const CommonOperatorTable = {
     "+": Nodes.AddictionExpression,
     "-": Nodes.SubstractionExpression,
     "*": Nodes.MultiplicationExpression,
@@ -16,9 +15,9 @@ export var CommonOperatorTable = {
     "|": Nodes.BitwiseORExpression,
     "??": Nodes.NullishCoalescingExpression,
     "&&": Nodes.LogicalANDExpression,
+    "and": Nodes.LogicalANDExpression,
     "||": Nodes.LogicalORExpression,
-    // "!": Nodes.LogicalNOTExpresssion, // Leaving this uncommented may lead to fun bugs 
-    // expression ! expression will be parsed without compilation errors LOL
+    "or": Nodes.LogicalORExpression,
     "<<": Nodes.BitwiseLeftShiftExpression,
     ">>": Nodes.BitwiseRightShiftExpression,
     ">>>": Nodes.BitwiseUnsignedRightShiftExpression,
@@ -27,11 +26,11 @@ export var CommonOperatorTable = {
     ">=": Nodes.GreaterThanOrEqual,
     "<": Nodes.LessThan,
     "<=": Nodes.LessThanOrEqual,
-    "==": Nodes.LooseComparison,
-    "===": Nodes.StrictComparison,
-    "!=": Nodes.LooseNegativeComparison,
-    "!==": Nodes.StrictNegativeComparison
-}
+    "==": Nodes.LooseEquality,
+    "===": Nodes.StrictEquality,
+    "!=": Nodes.LooseInequality,
+    "!==": Nodes.StrictInequality
+} as const;
 export var AssignmentOperatorTable = {
     "=": Nodes.AssignmentExpression,
     "+=": Nodes.AddictionAssignmentExpression,
@@ -49,5 +48,5 @@ export var AssignmentOperatorTable = {
     "<<=": Nodes.BitwiseLeftShiftAssignmentExpression,
     ">>=": Nodes.BitwiseRightShiftAssignmentExpression,
     ">>>=": Nodes.BitwiseUnsignedRightShiftAssignmentExpression
-}
+} as const;
 

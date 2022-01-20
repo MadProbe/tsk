@@ -1,0 +1,22 @@
+// Comment
+/* Comments here are suported samely as in the main language */
+
+/**
+ * A fast eqivalent of [].map() built-in function
+ * 
+ */
+macro FASTMAP$E(array, action) {
+    // string-like syntax for tokenized strings
+    return t"""
+        (fn () {
+            a = ${ array };
+            length = a.length;
+            index = 0;
+            newarray = __external_var("Array")(length);
+            while(index < length) {
+                newarray[index++] = ${ action }
+                index++;
+            }
+        })();
+    """;
+}

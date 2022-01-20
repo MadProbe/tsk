@@ -1,80 +1,83 @@
-import { AccessChainItemKind, Nodes, NodeType, ParameterNodeType } from "./enums";
+import { AccessChainItemKind, Nodes, NodeType, ParameterNodeKind } from "./enums";
 import { occurrences } from "./utils/occurrences.js";
-import { assert, call, includes, randomVarName, undefined } from "./utils/util.js";
-import type { AccessChainItem, ClassNode, Node, ParameterNode, TryStatmentNode } from "./nodes";
+import { assert_type, random_var_name, should_not_happen, undefined } from "./utils/util.js";
+import { _echo } from "./utils/_echo.js";
+import { AccessChainItem, ConstantValueNode, ExpressionWithBodyAndArgsNode, ExpressionWithBodyAndSymbolNode, ExpressionWithBodyNode, IfStatmentMeta, IfStatmentNode, Node, ParameterNode, PrefixlessSymbolNode, TryStatmentMeta, TryStatmentNode } from "./nodes.js";
+import { MultiValueComparer } from "./utils/comparer.js";
+import type { IClassNode, INode } from "./nodes";
 
 
+const block_node_comparer = new MultiValueComparer([
+    Nodes.FunctionExpression,
+    Nodes.AsyncFunctionExpression,
+    Nodes.GeneratorFunctionExpression,
+    Nodes.AsyncGeneratorFunctionExpression,
+    Nodes.IncludeStatment,
+    Nodes.KeepStatment,
+    Nodes.CodeBlock,
+    Nodes.TryStatment,
+    Nodes.IfStatment,
+    Nodes.DoWhileStatment,
+    Nodes.WhileStatment,
+    Nodes.ForOfStatment,
+    Nodes.ForRangeStatment,
+    Nodes.ForStatment,
+    Nodes.NamedIncludeStatment,
+] as const);
+const simple_node_comparer = new MultiValueComparer([
+    Nodes.Array,
+    Nodes.ArgumentBindingExpression,
+    Nodes.AsyncFunctionExpression,
+    Nodes.AsyncGeneratorFunctionExpression,
+    Nodes.BigIntValue,
+    // Nodes.CallExpression,
+    Nodes.MemberAccessExpression,
+    Nodes.FalseValue,
+    Nodes.TrueValue,
+    Nodes.InfinityValue,
+    Nodes.NaNValue,
+    Nodes.NullValue,
+    Nodes.NumberValue,
+    // Nodes.RangeExpression,
+    Nodes.StringValue,
+    Nodes.Symbol,
+    Nodes.SymbolNoPrefix,
+    Nodes.UndefinedValue,
+    Nodes.ArgumentsObject,
+    Nodes.ExternalVariable
+] as const);
 var __pretty = true;
-var hasOwnProperty = {}.hasOwnProperty;
-function assign<T extends object>(value: T, vals: Partial<T>) {
-    var result = new Object(value) as T;
-    for (const key in value) {
-        if (call(hasOwnProperty, value, key)) {
-            result[key] = vals[key]!;
-        }
-    }
-    return result;
-}
-function as_expression(exp: Node) {
+var commaAndWhitespace: string;
+function as_expression(exp: INode): INode {
     if (exp.type === NodeType.Expression) {
         return exp;
     } else {
-        return {
-            name: Nodes.CallExpression,
+        return ExpressionWithBodyAndArgsNode(Nodes.CallExpression, [{
+            name: exp.outerBody?.name ?? Nodes.FunctionExpression,
             type: NodeType.Expression,
-            body: [{
-                name: exp.outerBody?.name ?? Nodes.FunctionExpression,
-                type: NodeType.Expression,
-                body: [exp]
-            }],
-            args: []
-        } as Node;
+            body: [exp],
+            params: [],
+            locals: [],
+            nonlocals: []
+        }], []);
     }
 }
-function isFunctionNode(node: Node) {
-    return includes([
-        Nodes.FunctionExpression,
-        Nodes.AsyncFunctionExpression,
-        Nodes.GeneratorFunctionExpression,
-        Nodes.AsyncGeneratorFunctionExpression,
-        Nodes.IncludeStatment, // Don't represent function node, but don't require any ;
-        Nodes.KeepStatment,
-        Nodes.CodeBlock,
-        Nodes.TryStatment,
-        Nodes.IfStatment
-    ] as const, node.name);
+function isBlockNode(node: INode) {
+    return block_node_comparer.includes(node.name);
 }
-function isSimple(node: Node) {
-    return includes([
-        Nodes.Array,
-        Nodes.ArgumentBindingExpression,
-        Nodes.AsyncFunctionExpression,
-        Nodes.AsyncGeneratorFunctionExpression,
-        Nodes.BigIntValue,
-        Nodes.CallExpression,
-        Nodes.MemberAccessExpression,
-        Nodes.FalseValue,
-        Nodes.TrueValue,
-        Nodes.InfinityValue,
-        Nodes.NaNValue,
-        Nodes.NullValue,
-        Nodes.NumberValue,
-        Nodes.RangeValue,
-        Nodes.StringValue,
-        Nodes.Symbol,
-        Nodes.SymbolNoPrefix,
-        Nodes.UndefinedValue,
-        Nodes.ArgumentsObject,
-        Nodes.ExternalVariable
-    ] as const, node.name);
+function isSimple(node: INode) {
+    return simple_node_comparer.includes(node.name);
+}
+function space() {
+    return __pretty ? " " : "";
 }
 /**
  * @param {import("./parser").Node} node 
- * @param {any} [meta] 
+ * @param {any} meta 
  */
-export function _emit(node: Node, meta: any) {
-    var __text = "", elementParams: ParameterNode[], elementArgs: Node[],
-        length: number, index: number, body: string | Node[] | string[] | AccessChainItem[], __diff: boolean,
+function _emit(node: INode, meta: EmitterOptions) {
+    var __text = "", elementParams: ParameterNode[], elementArgs: INode[],
+        length: number, index: number, body: readonly INode[] | readonly AccessChainItem[], __diff: boolean,
         quote: string, rquote: string, name: string, node_name: Nodes, _: any;
     /**
      * Inserts space into __text variable if text must be prettified
@@ -92,25 +95,22 @@ export function _emit(node: Node, meta: any) {
      * Inserts indentation into __text variable
      */
     function is() {
-        __pretty && (__text += meta.sp);
+        __pretty && (__text += meta.indentation);
     }
     /**
      * Lowers indentation by 4 spaces
      */
     function li() {
-        meta.sp = meta.sp.slice(0, -4);
+        __pretty && (meta.indentation = meta.indentation.slice(0, -4));
     }
     /**
      * Raises indentation by 4 spaces
      */
     function ri() {
-        meta.sp += "    ";
+        __pretty && (meta.indentation += "    ");
     }
     function declare<T extends string>(name: T): T {
-        (__top.params ||= []).push({
-            name,
-            type: ParameterNodeType.NoPrefix
-        });
+        __top.params!.push(new ParameterNode(name, ParameterNodeKind.NoPrefix, undefined));
         return name;
     }
     function pre_emit_body() {
@@ -125,15 +125,15 @@ export function _emit(node: Node, meta: any) {
         ([__text, saved] = [saved, __text]);
         return saved;
     }
-    function emit_body(_body?: Node[]) {
-        _body ||= body as Node[];
+    function emit_body(_body: readonly INode[] = body as readonly INode[]) {
         index = 0, length = _body.length;
         for (var assigned = 0; index < length; index++) {
-            if (_body[index].name !== Nodes.Empty) {
+            const element = _body[index];
+            if (element.name !== Nodes.Empty) {
                 assigned++;
                 is();
-                __text += _emit(_body[index], meta);
-                if ((index + 1 < length || __pretty) && !isFunctionNode(_body[index])) {
+                __text += _emit(element, meta);
+                if ((index + 1 < length || __pretty) && !isBlockNode(element)) {
                     __text += ";";
                 }
                 nl();
@@ -143,58 +143,34 @@ export function _emit(node: Node, meta: any) {
             sp();
         }
     }
-    function emitChain(nodes: AccessChainItem[]): string {
-        function sp() {
-            __pretty && (___text += " ");
-        }
-        for (var index = 0, length = nodes.length, __text = ""; index < length; index++) {
-            var node = nodes[index], body = node.body, nodeKind = node.kind;
-            if (nodeKind === AccessChainItemKind.Head) {
-                __text += _emit(isSimple(body = as_expression(body)) && body.name !== Nodes.NumberValue ? body :
-                    ({ name: Nodes.GroupExpression, type: NodeType.Expression, body: [body] }), meta);
-            } else if (nodeKind === AccessChainItemKind.Normal) {
-                __text += `.${ _emit(body, meta) }`;
-            } else if (nodeKind === AccessChainItemKind.Computed) {
-                __text += `[${ _emit(body, meta) }]`;
-            } else if (nodeKind === AccessChainItemKind.Optional || nodeKind === AccessChainItemKind.OptionalComputed) {
-                var randomName = randomVarName(), ___text = `(n(${ randomName }`;
-                declare(randomName);
-                sp();
-                ___text += "=";
-                sp();
-                ___text += __text + ")";
-                sp();
-                ___text += "?";
-                sp();
-                ___text += "u";
-                sp();
-                ___text += ":";
-                sp();
-                nodes.splice(0, index, {
-                    kind: AccessChainItemKind.Head,
-                    body: {
-                        name: Nodes.SymbolNoPrefix,
-                        type: NodeType.Expression,
-                        symbolName: randomName
-                    }
-                });
-                nodes[1].kind = nodeKind === AccessChainItemKind.Optional ?
-                    AccessChainItemKind.Normal :
-                    AccessChainItemKind.Computed;
-                return `${ ___text }${ emitChain(nodes) })`;
-            } else {
-                nodes.splice(0, index, {
-                    kind: AccessChainItemKind.Head,
-                    body: {
-                        name: Nodes.SymbolNoPrefix,
-                        type: NodeType.Expression,
-                        symbolName: `__na(${ __text })`
-                    }
-                });
-                nodes[1].kind = nodeKind === AccessChainItemKind.NormalNullAsserted ?
-                    AccessChainItemKind.Normal :
-                    AccessChainItemKind.Computed;
-                return emitChain(nodes);
+    function emitChain(nodes: AccessChainItem[], __text = "", index = 0): string {
+        for (; index < nodes.length; index++) {
+            const node = nodes[index], { body, kind } = node;
+            switch (kind) {
+                case AccessChainItemKind.Head:
+                    __text += _emit(isSimple(body) && body.name !== Nodes.NumberValue ? as_expression(body) :
+                        ExpressionWithBodyNode(Nodes.GroupExpression, [body]), meta);
+                    break;
+
+                case AccessChainItemKind.Normal:
+                    __text += `.${ _emit(body, meta) }`;
+                    break;
+
+
+                case AccessChainItemKind.Computed:
+                    __text += `[${ _emit(body, meta) }]`;
+                    break;
+
+                case AccessChainItemKind.Optional:
+                case AccessChainItemKind.OptionalComputed:
+                    var random_name = declare(random_var_name());
+                    node.kind = kind === AccessChainItemKind.Optional ?
+                        AccessChainItemKind.Normal :
+                        AccessChainItemKind.Computed;
+                    return `(n(${ random_name }${ space() }=${ space() }${ __text })${ space() }?${ space() }u${ space() }:${ space() }${ emitChain(nodes, random_name, index) })`;
+
+                default:
+                    should_not_happen();
             }
         }
         return __text;
@@ -213,21 +189,18 @@ export function _emit(node: Node, meta: any) {
     }
     function emitCallExpression() {
         __text += "(";
-        elementArgs = node.args!;
-        length = elementArgs.length;
-        index = 0;
-        for (; index < length; index++) {
-            let node = elementArgs[index];
+        const args = node.meta!.args as Node[];
+        const length = args.length;
+        for (index = 0; index < length;) {
+            const node = args[index];
             __text += _emit(node, meta);
-            if (index + 1 < length) {
-                __text += ",";
-                sp();
+            if (++index < length) {
+                __text += commaAndWhitespace;
             }
         }
         __text += ")";
     }
-    function simple_body_emit(_body?: Node[]) {
-        _body ||= body as Node[];
+    function simple_body_emit(_body: readonly INode[] = body as readonly INode[]) {
         __text += "{";
         _body.length && nl();
         ri();
@@ -236,20 +209,18 @@ export function _emit(node: Node, meta: any) {
         length && is();
         __text += "}";
     }
-    meta ??= {};
-    meta.sp ??= "";
-    body = node.body!;
+    body = node.body! as INode[] | AccessChainItem[];
     switch (node_name = node.name) {
         case Nodes.ArgumentsObject:
             __text += "arguments";
         case Nodes.Empty:
             break;
         case Nodes.IncludeStatment:
-            assert<Node[]>(body);
+            assert_type<INode[]>(body);
             for (let index = 0, length = body.length; index < length; index++) {
                 const element = body[index];
                 __text += _emit(element, meta);
-                if (__pretty && !isFunctionNode(body[index])) {
+                if (__pretty && !isBlockNode(element) && element.type !== NodeType.Ephemerial) {
                     __text += ";";
                 }
                 if (index < length - 1) {
@@ -263,33 +234,34 @@ export function _emit(node: Node, meta: any) {
         case Nodes.GeneratorFunctionExpression:
         case Nodes.AsyncFunctionExpression:
         case Nodes.FunctionExpression:
-            assert<Node[]>(body);
+            assert_type<INode[]>(body);
             __text += "function";
             if (node_name === Nodes.GeneratorFunctionExpression) {
                 __text += "*";
             }
-            if (node.symbolName) {
-                __text += ` $${ node.symbolName }`;
+            if (node.symbol) {
+                __text += ` $${ node.symbol }`;
             } else sp();
             __text += "(";
             var pre_emitted = pre_emit_body();
-            elementParams = node.params ||= [];
+            elementParams = node.params ??= [];
             length = elementParams.length;
             index = 0;
-            var hasBody = body.length > 0 || elementParams.some(element => !!element.default || element.type === ParameterNodeType.Rest);
+            var hasBody = body.length > 0;
             for (; index < length; index++) {
-                let node = elementParams[index];
-                var namae = node.name;
-                if (node.type === ParameterNodeType.Rest) {
+                const element = elementParams[index], namae = element.name;
+                if (!!element.default) hasBody = true;
+                if (element.kind === ParameterNodeKind.Rest) {
+                    hasBody = true;
                     break;
                 }
                 if (typeof namae === "string") {
-                    __text += node.name = name = `${ node.type === ParameterNodeType.NoPrefix ? "" : "$" }${ namae || randomVarName() }`;
+                    __text += element.name = name = `${ element.kind === ParameterNodeKind.NoPrefix ? "" : "$" }${ namae || random_var_name() }`;
                 } else {
                     throw "Destructing parameters are not supported yet";
                     //__text += _emit(name as unknown as Node, meta);
                 }
-                if (index + 1 < length && elementParams[index + 1].type !== ParameterNodeType.Rest) {
+                if (index + 1 < length && elementParams[index + 1].kind !== ParameterNodeKind.Rest) {
                     __text += ",";
                     sp();
                 }
@@ -299,9 +271,9 @@ export function _emit(node: Node, meta: any) {
             __text += "{";
             ri();
             hasBody && nl();
-            if (node.locals && node.locals.length) {
+            if (node.locals?.length) {
                 is();
-                __text += `var ${ node.locals.map(local => `$${ local }`).join(`,${ __pretty ? " " : "" }`) };`;
+                __text += `var ${ node.locals.map(local => `$${ local }`).join(commaAndWhitespace) };`;
                 nl();
             }
             if (node_name === Nodes.AsyncFunctionExpression || node_name === Nodes.AsyncGeneratorFunctionExpression) {
@@ -319,15 +291,13 @@ export function _emit(node: Node, meta: any) {
             name = "";
             var hadRestParam = false;
             for (; index < length; index++) {
-                let node = elementParams[index];
-                namae = node.name;
+                const node = elementParams[index], namae = node.name;
                 if (hadRestParam) {
                     if (typeof namae === "string") {
                         is();
-                        __text += node.name = name = `${ node.type === ParameterNodeType.NoPrefix ? "" : "$" }${ namae || randomVarName() }`;
+                        __text += node.name = name = `${ node.kind === ParameterNodeKind.NoPrefix ? "" : "$" }${ namae || random_var_name() }`;
                         if (node.default) {
-                            var _tempVar = randomVarName();
-                            declare(_tempVar);
+                            const _tempVar = declare(random_var_name());
                             sp();
                             __text += "=";
                             sp();
@@ -342,6 +312,7 @@ export function _emit(node: Node, meta: any) {
                             __text += _emit(node.default, meta);
                             sp();
                             __text += ":";
+                            sp();
                             __text += `${ _tempVar })`;
                         } else {
                             sp();
@@ -355,10 +326,10 @@ export function _emit(node: Node, meta: any) {
                         //__text += _emit(name as unknown as Node, meta);
                     }
                 }
-                if (node.type === ParameterNodeType.Rest) {
+                if (node.kind === ParameterNodeKind.Rest) {
                     hadRestParam = true;
                     is();
-                    __text += `var ${ `$${ namae || randomVarName() }` }`;
+                    __text += `var ${ `$${ namae || random_var_name() }` }`;
                     sp();
                     __text += "=";
                     sp();
@@ -377,11 +348,10 @@ export function _emit(node: Node, meta: any) {
                     }
                     __text += `)${ index + 1 < length ? "," : ";" }`;
                     nl();
-                    hadRestParam = true;
                 }
                 if (node.default && !hadRestParam) {
                     is();
-                    __text += name || (name = typeof node.name === "string" ? node.name : _emit(node.name, meta));
+                    __text += name ||= typeof node.name === "string" ? node.name : _emit(node.name, meta);
                     sp();
                     __text += "===";
                     sp();
@@ -441,121 +411,110 @@ export function _emit(node: Node, meta: any) {
             __text += __pretty ? "Infinity" : "1/0";
             break;
 
+        case Nodes.ThisObject:
+            __text += "this";
+            break;
+
         case Nodes.Symbol:
-            __text += `$${ node.symbolName }`;
+            __text += `$${ node.symbol }`;
             break;
 
+        case Nodes.RegularExpression:
+        case Nodes.ExternalVariable:
         case Nodes.SymbolNoPrefix:
-            __text += node.symbolName;
-            break;
-
         case Nodes.NumberValue:
-            assert<string>(body);
-            __text += body;
+            __text += node.symbol!;
             break;
 
         case Nodes.ThrowExpression:
-            assert<[Node]>(body);
+            assert_type<[INode]>(body);
             __text += `__throw(${ _emit(body[0], meta) })`;
             break;
 
-        case Nodes.StringValue:
-            assert<string>(body);
+        case Nodes.StringValue: {
+            const body = node.symbol!;
             __diff = occurrences(body, "'") >= occurrences(body, '"'), quote = __diff ? '"' : "'", rquote = __diff ? "'" : '"';
             __text += `${ quote }${ body.replace("\\" + rquote, rquote).replace("\n", "\\n") }${ quote }`;
             break;
+        }
 
         case Nodes.PipelineExpression:
-            assert<[Node, Node]>(body);
-            name = randomVarName();
+            assert_type<[INode, INode]>(body);
+            name = random_var_name();
             __text += _emit({
                 name: Nodes.CallExpression,
                 type: NodeType.Expression,
                 body: [{
                     name: node.outerBody?.name ?? Nodes.FunctionExpression, // async? generator? function node
                     type: NodeType.Expression,
-                    params: [{
-                        name,
-                        type: ParameterNodeType.Normal
-                    }],
+                    params: [new ParameterNode(name, ParameterNodeKind.Normal, undefined)],
                     body: [{
                         name: Nodes.ReturnStatment,
                         type: NodeType.Statment,
                         body: [body[0]]
                     }]
-                }],
-                args: [body[1]]
-            } as Node, __pretty);
+                }], args: [body[1]]
+            }, meta);
             break;
 
         case Nodes.CallExpression:
-            assert<Node[]>(body);
+            assert_type<[Node]>(body);
             __text += _emit(body[0], meta);
             emitCallExpression();
             break;
 
-        case Nodes.GroupExpression:
-            assert<Node[]>(body);
-            __text += "(";
-            length = body.length;
-            index = 0;
-            for (; index < length; index++) {
-                let node = body[index];
-                __text += _emit(as_expression(node), meta);
-                if (index + 1 < length) {
-                    __text += ",";
-                    sp();
-                }
+        case Nodes.OptionalCallExpression:
+            {
+                assert_type<[Node]>(body);
+                const random_name = declare(random_var_name());
+                __text += `(n(${ random_name }`;
+                sp();
+                __text += "=";
+                sp();
+                __text += `${ _emit(body[0], meta) })`;
+                sp();
+                __text += "?";
+                sp();
+                __text += "u";
+                sp();
+                __text += ":";
+                sp();
+                __text += random_name;
+                emitCallExpression();
+                __text += ")";
+                break;
             }
-            __text += ")";
+
+        case Nodes.GroupExpression:
+            assert_type<INode[]>(body);
+            __text += `(${ body.map(node => _emit(as_expression(node), meta)).join(commaAndWhitespace) })`;
             break;
 
         case Nodes.ReturnStatment:
-            assert<[Node]>(body);
+            assert_type<[INode]>(body);
             __text += "return " + _emit(as_expression(body[0]), meta);
             break;
 
-        case Nodes.RangeValue:
-            type NodeWithStringBody = Node & { body: string; };
-            assert<[NodeWithStringBody, NodeWithStringBody]>(body);
-            var s = +body[0].body, e = +body[1].body;
-            __text += s === e ? "(function*(){})()" :
-                `(function*(){for(var i=${ s },e=${ e };i${ s > e ? ">" : "<" }e;i${ s > e ? "--" : "++" })yield i})()`;
-            break;
-
-        case Nodes.ExternalVariable:
-            assert<string>(body);
-            __text += body;
+        case Nodes.RangeExpression:
+            assert_type<[INode, INode]>(body);
+            __text += `(function*(){for(var i=${ _emit(body[0], meta) },e=${ _emit(body[1], meta) };i<e;)yield i++})()`;
             break;
 
         case Nodes.ExponentiationAssignmentExpression:
-            assert<[Node, Node]>(body);
+            assert_type<[INode, INode]>(body);
             __text += _emit(body[0], meta);
             sp();
             __text += "=";
             sp();
 
         case Nodes.ExponentiationExpression:
-            assert<[Node, Node]>(body);
+            assert_type<[INode, INode]>(body);
             __text += `Math.pow(${ _emit(body[0], meta) },`;
             sp();
             __text += `${ _emit(body[1], meta) })`;
             break;
 
         case Nodes.AssignmentExpression:
-            assert<[Node, Node]>(body);
-            // if (~[Nodes.OptionalMemberAccessExpression, Nodes.OptionalComputedMemberAccessExpression].indexOf(body[0].name)) {
-            //     throw "The left-hand side of an assignment expression may not be an optional property access.";
-            // }
-            // if (~[Nodes.Symbol, Nodes.ComputedMemberAccessExpression, Nodes.MemberAccessExpression].indexOf(body[0].name)) {
-            // }
-            __text += _emit(body[0], meta);
-            sp();
-            __text += "=";
-            sp();
-            __text += _emit(as_expression(body[1]), meta);
-            break;
-
         case Nodes.AddictionAssignmentExpression:
         case Nodes.SubstractionAssignmentExpression:
         case Nodes.MultiplicationAssignmentExpression:
@@ -571,6 +530,14 @@ export function _emit(node: Node, meta: any) {
         case Nodes.BitwiseLeftShiftAssignmentExpression:
         case Nodes.BitwiseRightShiftAssignmentExpression:
         case Nodes.BitwiseUnsignedRightShiftAssignmentExpression:
+            assert_type<[INode, INode]>(body);
+            __text += _emit(body[0], meta);
+            sp();
+            __text += node.symbol;
+            sp();
+            __text += _emit(as_expression(body[1]), meta);
+            break;
+
         case Nodes.AddictionExpression:
         case Nodes.SubstractionExpression:
         case Nodes.MultiplicationExpression:
@@ -587,28 +554,29 @@ export function _emit(node: Node, meta: any) {
         case Nodes.BitwiseLeftShiftExpression:
         case Nodes.BitwiseRightShiftExpression:
         case Nodes.BitwiseUnsignedRightShiftExpression:
-        case Nodes.LooseComparison:
-        case Nodes.StrictComparison:
-        case Nodes.LooseNegativeComparison:
-        case Nodes.StrictNegativeComparison:
+        case Nodes.LooseEquality:
+        case Nodes.StrictEquality:
+        case Nodes.LooseInequality:
+        case Nodes.StrictInequality:
         case Nodes.LessThanOrEqual:
         case Nodes.GreaterThanOrEqual:
         case Nodes.LessThan:
         case Nodes.GreaterThan:
-            assert<[Node, Node]>(body);
-            __text += _emit(body[0], meta);
+            assert_type<[INode, INode]>(body);
+            __text += _emit(as_expression(body[0]), meta);
             sp();
-            __text += node.symbolName;
+            __text += node.symbol;
             sp();
             __text += _emit(as_expression(body[1]), meta);
             break;
 
         case Nodes.IfStatment:
-            assert<Node[]>(body);
+            assert_type<Node<IfStatmentMeta>>(node);
+            assert_type<INode[]>(body);
             __text += "if";
             sp();
             __text += "(";
-            __text += _emit(as_expression(node.args as unknown as Node), meta);
+            __text += _emit(as_expression(node.meta.condition), meta);
             __text += ")";
             sp();
             __text += "{";
@@ -619,15 +587,15 @@ export function _emit(node: Node, meta: any) {
             li();
             bodyLength && is();
             __text += "}";
-            if (node.else || node.elseif) {
+            if (node.meta.else || node.meta.elseif) {
                 sp();
                 __text += "else";
-                if (node.elseif) {
-                    __text += ` ${ _emit(node.elseif, meta) }`;
+                if (node.meta.elseif) {
+                    __text += ` ${ _emit(node.meta.elseif, meta) }`;
                 } else {
                     sp();
                     __text += "{";
-                    bodyLength = (body = node.else!.body!).length;
+                    bodyLength = (body = node.meta.else.body as Node[]).length;
                     bodyLength && nl();
                     ri();
                     emit_body();
@@ -639,8 +607,8 @@ export function _emit(node: Node, meta: any) {
             break;
 
         case Nodes.YieldExpression:
-            assert<boolean>(_);
-            assert<[Node]>(body);
+            assert_type<boolean>(_);
+            assert_type<[INode]>(body);
             __text += "yield";
             if (_ = node.outerBody!.name === Nodes.AsyncGeneratorFunctionExpression) {
                 sp();
@@ -656,8 +624,8 @@ export function _emit(node: Node, meta: any) {
             break;
 
         case Nodes.YieldFromExpression:
-            assert<boolean>(_);
-            assert<[Node]>(body);
+            assert_type<boolean>(_);
+            assert_type<[INode]>(body);
             __text += "yield*";
             if (_ = node.outerBody!.name === Nodes.AsyncGeneratorFunctionExpression) {
                 sp();
@@ -671,8 +639,7 @@ export function _emit(node: Node, meta: any) {
             break;
 
         case Nodes.AwaitExpression:
-            assert<boolean>(_);
-            assert<[Node]>(body);
+            assert_type<[INode]>(body);
             __text += "yield";
             if (_ = node.outerBody!.name === Nodes.AsyncGeneratorFunctionExpression) {
                 sp();
@@ -688,57 +655,36 @@ export function _emit(node: Node, meta: any) {
             break;
 
         case Nodes.MemberAccessExpression:
-            assert<AccessChainItem[]>(body);
+            assert_type<AccessChainItem[]>(body);
             __text += emitChain(body);
             break;
 
-        // case Nodes.MemberAccessExpression:
-        //     assert<[Node, Node]>(body);
-        //     __text += _emit(body[0], meta) + ".";
-        //     if (body[1].name !== Nodes.Symbol && body[1].name !== Nodes.SymbolNoPrefix) {
-        //         (body[1].body![0] as Node).name = Nodes.SymbolNoPrefix;
-        //     }
-        //     if (body[1].name === Nodes.Symbol) {
-        //         body[1].name = Nodes.SymbolNoPrefix;
-        //     }
-        //     __text += _emit(body[1], meta);
-        //     // console.log(__text);
-        //     break;
-
-        // case Nodes.ComputedMemberAccessExpression:
-        //     assert<[Node, Node]>(body);
-        //     __text += `${ _emit(body[0], meta) }[${ _emit(body[1], meta) }]`;
-        //     // console.log(__text);
-        //     break;
-
         case Nodes.Array:
-            assert<Node[]>(body);
-            __text += `[${ body.map(node => _emit(as_expression(node), meta)).join(`,${ __pretty ? " " : "" }`) }]`;
+            assert_type<INode[]>(body);
+            __text += `[${ body.map(node => _emit(as_expression(node), meta)).join(commaAndWhitespace) }]`;
             break;
 
         case Nodes.ArgumentBindingExpression:
-            assert<[Node]>(body);
+            assert_type<[INode]>(body);
             __text += `__bind(${ _emit(body[0], meta) },`;
             sp();
             __text += `u,`;
             sp();
-            __text += `${ node.args!.map(node => _emit(as_expression(node), meta)).join(`,${ __pretty ? " " : "" }`) })`;
+            __text += `${ node.body!.map(node => _emit(as_expression(node as INode), meta)).join(commaAndWhitespace) })`;
             break;
 
         case Nodes.LiteralLogicalNotExpression:
-            assert<[Node]>(body);
-            assert<string>(_);
+            assert_type<[INode]>(body);
             _ = as_expression(body[0]);
             __text += `!${ isSimple(_) ? _emit(_, meta) : `(${ _emit(_, meta) })` }`;
             break;
 
         case Nodes.KeepStatment:
-            assert<Node[]>(body);
+            assert_type<INode[]>(body);
             elementArgs = node.args!;
             bodyLength = body.length;
             var declared = elementArgs.map((arg, index) => {
-                var name = randomVarName();
-                declare(name);
+                const name = declare(random_var_name());
                 index && is();
                 __text += name;
                 sp();
@@ -750,16 +696,14 @@ export function _emit(node: Node, meta: any) {
             });
             emit_body();
             __pretty || (__text += ";");
-            length = elementArgs.length;
-            for (var index = 0; index < length; index++) {
+            for (var index = 0; index < elementArgs.length; index++) {
                 index && nl();
                 is();
-                var tempVar = declared[index];
                 __text += _emit(elementArgs[index], meta);
                 sp();
                 __text += "=";
                 sp();
-                __text += tempVar + ";";
+                __text += declared[index] + ";";
             }
             break;
 
@@ -768,72 +712,55 @@ export function _emit(node: Node, meta: any) {
             break;
 
         case Nodes.NullAssertionExpression:
-            assert<[Node]>(body);
-            __text += `__na(${ _emit(as_expression(body[0]), meta) })`;
+            assert_type<[INode]>(body);
+            __text += _emit(as_expression(body[0]), meta);
             break;
 
         case Nodes.NewExpression:
-            assert<[Node]>(body);
+            assert_type<[INode]>(body);
             __text += "new " + _emit(as_expression(body[0]), meta);
             break;
 
         case Nodes.TryStatment:
-            assert<TryStatmentNode>(node);
-            assert<Node[]>(body);
-            __text += "try";
-            sp();
-            namae = node.else ? declare(randomVarName()) : "";
-            simple_body_emit(namae ? [{
-                name: Nodes.AssignmentExpression,
-                type: NodeType.Expression,
-                body: [
-                    { name: Nodes.SymbolNoPrefix, type: NodeType.Expression, symbolName: namae },
-                    { name: Nodes.TrueValue, type: NodeType.Expression }
-                ]
-            } as Node].concat(body || []) : undefined);
-            if (node.catch) {
+            {
+                assert_type<Node<TryStatmentMeta>>(node);
+                assert_type<INode[]>(body);
+                __text += "try";
                 sp();
-                __text += "catch";
-                sp();
-                __text += `(${ node.catch[0] ? `$${ node.catch[0] }` : "_" })`;
-                sp();
-                simple_body_emit(node.else ? [{
-                    name: Nodes.AssignmentExpression,
-                    type: NodeType.Expression,
-                    body: [
-                        { name: Nodes.SymbolNoPrefix, type: NodeType.Expression, symbolName: namae },
-                        { name: Nodes.FalseValue, type: NodeType.Expression }
-                    ]
-                } as Node].concat(node.catch[1]) : node.catch[1]);
+                const name = node.meta.else ? declare(random_var_name()) : "";
+                simple_body_emit(name ? [ExpressionWithBodyAndSymbolNode(Nodes.AssignmentExpression, [
+                    PrefixlessSymbolNode(name),
+                    ConstantValueNode(Nodes.TrueValue)
+                ], "="), ...body] : body);
+                if (node.meta.catch) {
+                    sp();
+                    __text += "catch";
+                    sp();
+                    __text += `(${ node.meta.catch.symbol ? `$${ node.meta.catch.symbol }` : "_" })`;
+                    sp();
+                    simple_body_emit(node.meta.else ? [ExpressionWithBodyAndSymbolNode(Nodes.AssignmentExpression, [
+                        PrefixlessSymbolNode(name),
+                        ConstantValueNode(Nodes.FalseValue)
+                    ], "="), ...node.meta.catch.body as Node[] ?? []] : node.meta.catch.body as Node[]);
+                }
+                if (node.meta.finally || name) {
+                    sp();
+                    __text += "finally";
+                    sp();
+                    const $if = IfStatmentNode(node.meta.else, node.outerBody as Node, PrefixlessSymbolNode(name));
+                    simple_body_emit(name ? [TryStatmentNode([$if], undefined!, undefined!, node.meta.finally ?? [], node.outerBody as never)] : node.meta.finally);
+                }
+                break;
             }
-            if (node.finally || namae) {
-                sp();
-                __text += "finally";
-                sp();
-
-                simple_body_emit(namae ? [{
-                    name: Nodes.TryStatment,
-                    type: NodeType.Statment,
-                    body: [{
-                        name: Nodes.IfStatment,
-                        type: NodeType.Statment,
-                        body: node.else,
-                        args: { name: Nodes.SymbolNoPrefix, type: NodeType.Expression, symbolName: namae }
-                    }],
-                    finally: node.finally || []
-                } as TryStatmentNode | { else?: Node[], catch?: TryStatmentNode["catch"]; } as unknown as Node] : node.finally);
-            }
-            break;
 
         case Nodes.SymbolShortcut:
-            assert<string>(body);
-            __text += `Symbol.${ body }`;
+            __text += `Symbol.${ node.symbol! }`;
             break;
 
         case Nodes.WhileStatment:
             __text += "while";
             sp();
-            __text += `(${ _emit(node.args![0], meta) })`;
+            __text += `(${ _emit(as_expression(node.args![0]), meta) })`;
             sp();
             simple_body_emit();
             break;
@@ -845,7 +772,7 @@ export function _emit(node: Node, meta: any) {
             sp();
             __text += "while";
             sp();
-            __text += `(${ _emit(node.args![0], meta) })`;
+            __text += `(${ _emit(as_expression(node.args![0]), meta) })`;
             break;
 
         case Nodes.ImportExpression:
@@ -853,36 +780,90 @@ export function _emit(node: Node, meta: any) {
             emitCallExpression();
             break;
 
+        case Nodes.ForRangeStatment:
+            {
+                const [from, to, $as] = node.args as [Node, Node, Node];
+                const as = _emit($as, meta);
+                __text += "for";
+                sp();
+                __text += "(var";
+                sp();
+                __text += as;
+                sp();
+                __text += "=";
+                sp();
+                __text += _emit(from, meta);
+                if (isSimple(to)) {
+                    __text += ";";
+                    sp();
+                    __text += as;
+                    sp();
+                    __text += "<";
+                    sp();
+                    __text += _emit(to, meta);
+                } else {
+                    __text += ",";
+                    sp();
+                    const _ = random_var_name();
+                    __text += _;
+                    sp();
+                    __text += "=";
+                    sp();
+                    __text += _emit(to, meta) + ";";
+                    sp();
+                    __text += as;
+                    sp();
+                    __text += "<";
+                    sp();
+                    __text += _;
+                }
+                __text += ";";
+                sp();
+                __text += as + "++)";
+                sp();
+                simple_body_emit();
+            }
+            break;
+
         case undefined: {
-            const sp = meta.sp + "    ";
+            const sp = meta.indentation + "    ";
             __text += `/*\n${ sp }Cannot emit undefined, has something gone wrong?` +
-                `\n${ sp }Stack trace:\n${ sp + Error().stack?.replace(/\n/g, `\n${ sp }`) }\n${ meta.sp }*/`;
+                `\n${ sp }Stack trace:\n${ sp + Error().stack?.replace(/\n/g, `\n${ sp }`) }\n${ meta.indentation }*/`;
             break;
         }
 
+        case Nodes.Shebang:
+            __text += "#!" + node.symbol;
+            break;
+
         case Nodes.ClassExpression:
-            assert<ClassNode>(node);
+            assert_type<IClassNode>(node);
             console.log(node);
 
         default:
             __text += `/*cannot emit node Nodes[${ node_name }]*/`;
             break;
     }
-    assert<string>(__text.toString());
     return __text;
 }
-export interface EmitterOptions {
+export interface IEmitterOptions {
     pretty?: boolean;
+    forgetShebang?: boolean;
     url?: string;
 }
-var __top: Node;
+var __top: INode;
+class EmitterOptions implements IEmitterOptions {
+    indentation: string = "";
+    constructor(public readonly url: string | undefined) { }
+}
 /**
  * @param {import("./parser").Node} node 
  * @param {import("./emitter").EmitterOptions} opts
  */
-export function emit(node: Node, { pretty = false, url = "" }: EmitterOptions = {}) {
+export function emit(node: INode, { pretty = false, forgetShebang = true, ...other }: IEmitterOptions = {}) {
     __pretty = pretty;
+    commaAndWhitespace = ',' + (__pretty ? " " : "");
+    const options = new EmitterOptions(other.url);
 
-    // inspectLog(node);
-    return _emit(__top = node, { url });
+    return (!forgetShebang && node.meta!.shebang && _emit(node.meta!.shebang as INode, options) || "") + _emit(__top = node, options);
 }

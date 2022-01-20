@@ -66,14 +66,14 @@ export const enum Nodes {
     LiteralLogicalNotExpression,
     ListComprehensionExpression,
     IncludeStatment,
-    RangeValue,
+    RangeExpression,
     // May be used for TS
     InterfaceStatment,
     TypeExpression,
     TypeStatment,
     ReturnStatment,
-    LooseComparison,
-    StrictComparison,
+    LooseEquality,
+    StrictEquality,
     LessThanOrEqual,
     GreaterThanOrEqual,
     LessThan,
@@ -96,19 +96,41 @@ export const enum Nodes {
     TryStatment,
     WhileStatment,
     DoWhileStatment,
-    LooseNegativeComparison,
-    StrictNegativeComparison,
+    LooseInequality,
+    StrictInequality,
     ImportExpression,
     NamedIncludeStatment,
-    SymbolShortcut
+    SymbolShortcut,
+    ObjectExpression,
+    Decorator,
+    ForRangeStatment,
+    ForOfStatment,
+    RegularExpression,
+    Shebang,
+    CatchStatment,
+    InExpression,
+    InstanceOfExpression,
+    ContainsExpression,
+    VoidExpression,
+    DeleteExpression,
+    TypeOfExpression,
+    PrefixIncrementExpression,
+    PrefixDecrementExpression,
+    PlusExpression,
+    NegatationExpression,
+    BitwiseRevertExpression,
+    PostfixIncrementExpression,
+    PostfixDecrementExpression,
+    TernaryExpression,
+    ThisObject
 }
-export const enum FNNodeType {
+export const enum FunctionNodeKind {
     Sync,
     Generator,
     Async,
     AsyncGenerator
 }
-export const enum ParameterNodeType {
+export const enum ParameterNodeKind {
     Normal,
     Rest,
     Empty,
@@ -119,7 +141,8 @@ export const enum ParameterNodeType {
  */
 export const enum NodeType {
     Statment,
-    Expression
+    Expression,
+    Ephemerial
 }
 export const enum Scopes {
     Sync,
@@ -132,22 +155,19 @@ export const enum AccessChainItemKind {
     Normal,
     Computed,
     Optional,
-    OptionalComputed,
-    NormalNullAsserted,
-    ComputedNullAsserted
+    OptionalComputed
 }
 export const enum Tokens {
-    String,
-    Number,
-    Symbol,
-    Operator,
-    Special,
-    Regex,
-    Whitespace,
-    Comment,
-    Keyword,
-    Range,
-    MultilineComment
+    String = 0x0000001,
+    Number = 0x0000002,
+    Symbol = 0x0000004,
+    Operator = 0x00000008,
+    Whitespace = 0x00000010,
+    Comment = 0x00000020,
+    MultilineComment = 0x00000040,
+    Keyword = 0x00000080,
+    /**@deprecated */
+    Range = 0x00000100
 }
 export const enum DiagnosticSeverity {
     Info,
@@ -156,10 +176,16 @@ export const enum DiagnosticSeverity {
     Error,
     FatalError
 }
-export const enum ParseNodeType {
+export const enum ParseNodeKind {
     Expression = "expression",
     String = "string",
     Number = "number",
     Range = "range",
     Indentifier = "indentifier"
+}
+export const enum ObjectBodyNodeKind {
+    Normal,
+    Setter,
+    Getter,
+    Rest
 }

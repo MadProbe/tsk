@@ -8,18 +8,14 @@ fn is_palindromic(n) =>
 
 fn find_largest_palindromic(big) {
     res = 0;
-    i = 100;
-    while (i < big) {
-        j = 100;
-        while (j < big) {
+    for range (100 to big as i) {
+        for range (100 to big as j) {
             v = i * j;
             t = is_palindromic(v);
             if (t && v > res) {
                 res = v;
             }
-            j += 1;
         }
-        i += 1;
     }
     return res;
 }
