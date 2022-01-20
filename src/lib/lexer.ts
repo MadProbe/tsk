@@ -100,9 +100,8 @@ class Lexer implements TokenStream {
         }
     }
     private _scanChars(result: string) {
-        var next: string;
-        while (!nullish(next = this.text_stream.move()) && validIDComparer.includes(next)) {
-            result += next;
+        while (validIDComparer.includes(this.text_stream.next)) {
+            result += this.text_stream.move();
         }
         return new Token(keywordComparer.includes(result) ? Tokens.Keyword : Tokens.Symbol, result);
     }
